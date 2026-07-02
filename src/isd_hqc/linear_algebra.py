@@ -29,4 +29,25 @@ def gf2_matrix_vector_mul(matrix: Matrix, vector: Vector) -> Vector:
 
      return result
 
+
+def transpose_matrix(matrix: Matrix) -> Matrix:
+    if not matrix:
+        raise ValueError("Matrix must not be empty.")
+
+    number_of_columns = len(matrix[0])
+
+    if any(len(row) != number_of_columns for row in matrix):
+        raise ValueError("All matrix rows must have the same length.")
+
+    transposed = []
+
+    for column in range(number_of_columns):
+        new_row = []
+
+        for row in matrix:
+            new_row.append(row[column])
+
+        transposed.append(new_row)
+
+    return transposed
    

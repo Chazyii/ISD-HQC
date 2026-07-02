@@ -4,6 +4,7 @@ from isd_hqc.linear_algebra import (
     gf2_add_vectors,
     gf2_matrix_vector_mul,
     hamming_weight,
+    transpose_matrix,
 )
 
 
@@ -55,3 +56,33 @@ def test_gf2_matrix_vector_mul_invalid_dimensions():
 
     with pytest.raises(ValueError):
         gf2_matrix_vector_mul(matrix, vector)
+
+
+def test_transpose_matrix():
+    matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    transposed = transpose_matrix(matrix)
+
+    assert transposed == [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+    ]
+
+
+def test_transpose_empty_matrix():
+    with pytest.raises(ValueError):
+        transpose_matrix([])
+
+
+def test_transpose_invalid_matrix():
+    matrix = [
+        [1, 0],
+        [1],
+    ]
+
+    with pytest.raises(ValueError):
+        transpose_matrix(matrix)
