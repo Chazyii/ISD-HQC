@@ -127,3 +127,51 @@ Implement linear algebra utilities required by ISD algorithms:
 - Gaussian elimination over GF(2)
 - matrix rank
 - solving linear systems over GF(2)
+
+# Milestone 3 — Linear Algebra Utilities for ISD
+
+**Date:** 2026-07-02
+
+## Goal
+
+Implement additional matrix operations required by Information Set Decoding algorithms.
+
+## Theory learned
+
+- Matrix transposition
+- Relationship between matrix rows and columns
+- Matrix dimension validation
+- Handling invalid matrix representations
+
+## Implemented
+
+### linear_algebra.py
+
+- Matrix transposition
+
+## Tested
+
+### linear_algebra.py
+
+- matrix transposition
+- empty matrix
+- invalid matrix with rows of different lengths
+
+All tests passed.
+
+## Notes
+
+Matrix transposition was implemented explicitly using nested loops instead of Python shortcuts such as `zip(*matrix)`.
+This makes the transformation easier to understand and keeps the implementation suitable for learning and later extension.
+
+---
+
+## Next milestone
+
+Continue implementing linear algebra utilities required by ISD algorithms:
+
+- identity matrix
+- matrix-matrix multiplication over GF(2)
+- Gaussian elimination over GF(2)
+- matrix rank
+- solving linear systems over GF(2)
