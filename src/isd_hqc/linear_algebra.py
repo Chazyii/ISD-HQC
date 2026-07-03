@@ -50,4 +50,25 @@ def transpose_matrix(matrix: Matrix) -> Matrix:
         transposed.append(new_row)
 
     return transposed
+
+
+def identity_matrix(size: int) -> Matrix:
+
+    if size <= 0:
+        raise ValueError("Size must be positive.")
+
+    matrix = []
+
+    for row in range(size):
+        new_row = []
+
+        for column in range(size):
+            if row == column:
+                new_row.append(1)
+            else:
+                new_row.append(0)
+
+        matrix.append(new_row)
+
+    return matrix
    

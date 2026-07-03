@@ -5,6 +5,7 @@ from isd_hqc.linear_algebra import (
     gf2_matrix_vector_mul,
     hamming_weight,
     transpose_matrix,
+    identity_matrix,
 )
 
 
@@ -86,3 +87,18 @@ def test_transpose_invalid_matrix():
 
     with pytest.raises(ValueError):
         transpose_matrix(matrix)
+
+
+def test_identity_matrix():
+    result = identity_matrix(3)
+
+    assert result == [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ]
+
+
+def test_identity_matrix_invalid_size():
+    with pytest.raises(ValueError):
+        identity_matrix(0)
