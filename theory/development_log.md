@@ -10,14 +10,6 @@
 
 Create the mathematical foundation for Information Set Decoding (ISD) algorithms by implementing the basic operations over GF(2).
 
-## Theory learned
-
-- Arithmetic over GF(2)
-- Binary vectors
-- Binary matrices
-- Hamming weight
-- Matrix-vector multiplication over GF(2)
-
 ## Implemented
 
 ### linear_algebra.py
@@ -58,14 +50,6 @@ More efficient implementations (NumPy, bit arrays or C/C++) will be introduced a
 ## Goal
 
 Implement the basic building blocks required to formulate the Syndrome Decoding problem.
-
-## Theory learned
-
-- Error vectors
-- Parity-check matrices
-- Syndrome computation
-- Solution verification
-- Random instance generation for Syndrome Decoding
 
 ## Implemented
 
@@ -130,32 +114,34 @@ Implement linear algebra utilities required by ISD algorithms:
 
 # Milestone 3 — Linear Algebra Utilities for ISD
 
-**Date:** 2026-07-02
+**Date:** 2026-07-03
 
 ## Goal
 
-Implement additional matrix operations required by Information Set Decoding algorithms.
+Extend the binary linear algebra library with additional matrix operations required for implementing Information Set Decoding algorithms.
 
-## Theory learned
-
-- Matrix transposition
-- Relationship between matrix rows and columns
-- Matrix dimension validation
-- Handling invalid matrix representations
 
 ## Implemented
 
 ### linear_algebra.py
 
 - Matrix transposition
+- Identity matrix generation
 
 ## Tested
 
 ### linear_algebra.py
 
-- matrix transposition
+#### Matrix transposition
+
+- correct transposition
 - empty matrix
 - invalid matrix with rows of different lengths
+
+#### Identity matrix
+
+- correct identity matrix generation
+- invalid matrix size
 
 All tests passed.
 
@@ -164,13 +150,14 @@ All tests passed.
 Matrix transposition was implemented explicitly using nested loops instead of Python shortcuts such as `zip(*matrix)`.
 This makes the transformation easier to understand and keeps the implementation suitable for learning and later extension.
 
+The identity matrix implementation will be used in future milestones, especially during Gaussian elimination and solving linear systems over GF(2).
+
 ---
 
 ## Next milestone
 
 Continue implementing linear algebra utilities required by ISD algorithms:
 
-- identity matrix
 - matrix-matrix multiplication over GF(2)
 - Gaussian elimination over GF(2)
 - matrix rank
