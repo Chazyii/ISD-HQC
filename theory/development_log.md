@@ -101,16 +101,6 @@ The project is now able to generate complete random Syndrome Decoding instances:
 
 This provides the foundation required for implementing Information Set Decoding algorithms.
 
----
-
-## Next milestone
-
-Implement linear algebra utilities required by ISD algorithms:
-
-- matrix transposition
-- Gaussian elimination over GF(2)
-- matrix rank
-- solving linear systems over GF(2)
 
 # Milestone 3 — Linear Algebra Utilities for ISD
 
