@@ -30,6 +30,43 @@ def gf2_matrix_vector_mul(matrix: Matrix, vector: Vector) -> Vector:
      return result
 
 
+
+def gf2_matrix_matrix_mul(matrix_a: Matrix, matrix_b: Matrix) -> Matrix:
+    
+    if not matrix_a or not matrix_b:
+        raise ValueError("Matrices must not be empty.")
+
+    columns_a = len(matrix_a[0])
+
+    if any(len(row) != columns_a for row in matrix_a):
+        raise ValueError("All rows in the first matrix must have the same length.")
+
+    columns_b = len(matrix_b[0])
+
+    if any(len(row) != columns_b for row in matrix_b):
+        raise ValueError("All rows in the second matrix must have the same length.")
+
+    if columns_a != len(matrix_b):
+        raise ValueError("Matrix dimensions are incompatible for multiplication.")
+
+    result = []
+
+    for row in matrix_a:
+        result_row = []
+
+        for column in transpose_matrix(matrix_b):
+            value = 0
+
+            for a, b in zip(row, column):
+                value ^= a & b
+
+            result_row.append(value)
+
+        result.append(result_row)
+
+    return result
+
+
 def transpose_matrix(matrix: Matrix) -> Matrix:
     if not matrix:
         raise ValueError("Matrix must not be empty.")

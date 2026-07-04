@@ -6,6 +6,7 @@ from isd_hqc.linear_algebra import (
     hamming_weight,
     transpose_matrix,
     identity_matrix,
+    gf2_matrix_matrix_mul,
 )
 
 
@@ -102,3 +103,42 @@ def test_identity_matrix():
 def test_identity_matrix_invalid_size():
     with pytest.raises(ValueError):
         identity_matrix(0)
+
+
+def test_gf2_matrix_matrix_mul():
+    matrix_a = [
+        [1, 0],
+        [1, 1],
+    ]
+
+    matrix_b = [
+        [1, 1],
+        [0, 1],
+    ]
+
+    result = gf2_matrix_matrix_mul(matrix_a, matrix_b)
+
+    assert result == [
+        [1, 1],
+        [1, 0],
+    ]
+
+
+def test_gf2_matrix_matrix_mul_invalid_dimensions():
+    matrix_a = [
+        [1, 0],
+    ]
+
+    matrix_b = [
+        [1, 1],
+        [0, 1],
+        [1, 0],
+    ]
+
+    with pytest.raises(ValueError):
+        gf2_matrix_matrix_mul(matrix_a, matrix_b)
+
+
+def test_gf2_matrix_matrix_mul_empty_matrix():
+    with pytest.raises(ValueError):
+        gf2_matrix_matrix_mul([], [[1]])
