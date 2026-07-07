@@ -147,3 +147,16 @@ def gf2_row_echelon_form(matrix: Matrix) -> Matrix:
             break
 
     return result
+
+
+def gf2_rank(matrix: Matrix) -> int:
+    
+    echelon_form = gf2_row_echelon_form(matrix)
+
+    rank = 0
+
+    for row in echelon_form:
+        if any(value == 1 for value in row):
+            rank += 1
+
+    return rank

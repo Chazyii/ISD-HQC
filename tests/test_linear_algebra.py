@@ -8,6 +8,7 @@ from isd_hqc.linear_algebra import (
     identity_matrix,
     gf2_matrix_matrix_mul,
     gf2_row_echelon_form,
+    gf2_rank,
 )
 
 
@@ -188,3 +189,31 @@ def test_gf2_row_echelon_form_invalid_matrix():
 
     with pytest.raises(ValueError):
         gf2_row_echelon_form(matrix)
+
+
+def test_gf2_rank():
+    matrix = [
+        [1, 1, 0],
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    assert gf2_rank(matrix) == 2
+
+
+def test_gf2_rank_full_rank():
+    matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    assert gf2_rank(matrix) == 2
+
+
+def test_gf2_rank_zero_matrix():
+    matrix = [
+        [0, 0],
+        [0, 0],
+    ]
+
+    assert gf2_rank(matrix) == 0
