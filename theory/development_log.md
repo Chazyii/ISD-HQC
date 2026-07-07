@@ -104,12 +104,11 @@ This provides the foundation required for implementing Information Set Decoding 
 
 # Milestone 3 — Linear Algebra Utilities for ISD
 
-**Date:** 2026-07-03
+**Date:** 2026-07-07
 
 ## Goal
 
-Extend the binary linear algebra library with additional matrix operations required for implementing Information Set Decoding algorithms.
-
+Build the core linear algebra library over GF(2) required for implementing Information Set Decoding algorithms.
 
 ## Implemented
 
@@ -117,38 +116,60 @@ Extend the binary linear algebra library with additional matrix operations requi
 
 - Matrix transposition
 - Identity matrix generation
+- Matrix-matrix multiplication over GF(2)
+- Gaussian elimination (row echelon form)
+- Matrix rank computation
 
 ## Tested
 
-### linear_algebra.py
-
-#### Matrix transposition
+### Matrix transposition
 
 - correct transposition
 - empty matrix
 - invalid matrix with rows of different lengths
 
-#### Identity matrix
+### Identity matrix
 
 - correct identity matrix generation
 - invalid matrix size
+
+### Matrix-matrix multiplication
+
+- correct multiplication
+- incompatible matrix dimensions
+- empty matrix
+
+### Gaussian elimination
+
+- correct row echelon form
+- row swapping
+- empty matrix
+- invalid matrix representation
+
+### Matrix rank
+
+- full-rank matrix
+- rank-deficient matrix
+- zero matrix
 
 All tests passed.
 
 ## Notes
 
-Matrix transposition was implemented explicitly using nested loops instead of Python shortcuts such as `zip(*matrix)`.
-This makes the transformation easier to understand and keeps the implementation suitable for learning and later extension.
+The project now contains the complete set of fundamental linear algebra operations required by Information Set Decoding algorithms.
 
-The identity matrix implementation will be used in future milestones, especially during Gaussian elimination and solving linear systems over GF(2).
+The implemented Gaussian elimination routine forms the basis for matrix rank computation and will also be used by subsequent ISD algorithms.
+
+All operations are currently implemented using standard Python data structures to maximize readability and simplify debugging before future optimization.
 
 ---
 
 ## Next milestone
 
-Continue implementing linear algebra utilities required by ISD algorithms:
+# Milestone 4 — Prange Algorithm
 
-- matrix-matrix multiplication over GF(2)
-- Gaussian elimination over GF(2)
-- matrix rank
-- solving linear systems over GF(2)
+- Information Set selection
+- Solving the induced linear system
+- Complete Prange algorithm implementation
+- Validation on Syndrome Decoding instances
+- Runtime and memory measurements
