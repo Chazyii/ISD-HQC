@@ -7,6 +7,7 @@ from isd_hqc.linear_algebra import (
     transpose_matrix,
     identity_matrix,
     gf2_matrix_matrix_mul,
+    gf2_row_echelon_form,
 )
 
 
@@ -142,3 +143,48 @@ def test_gf2_matrix_matrix_mul_invalid_dimensions():
 def test_gf2_matrix_matrix_mul_empty_matrix():
     with pytest.raises(ValueError):
         gf2_matrix_matrix_mul([], [[1]])
+
+
+def test_gf2_row_echelon_form():
+    matrix = [
+        [1, 1, 0],
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    result = gf2_row_echelon_form(matrix)
+
+    assert result == [
+        [1, 1, 0],
+        [0, 1, 1],
+        [0, 0, 0],
+    ]
+
+
+def test_gf2_row_echelon_form_requires_row_swap():
+    matrix = [
+        [0, 1, 1],
+        [1, 0, 1],
+    ]
+
+    result = gf2_row_echelon_form(matrix)
+
+    assert result == [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+
+def test_gf2_row_echelon_form_empty_matrix():
+    with pytest.raises(ValueError):
+        gf2_row_echelon_form([])
+
+
+def test_gf2_row_echelon_form_invalid_matrix():
+    matrix = [
+        [1, 0],
+        [1],
+    ]
+
+    with pytest.raises(ValueError):
+        gf2_row_echelon_form(matrix)

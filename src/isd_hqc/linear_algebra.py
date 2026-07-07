@@ -108,4 +108,42 @@ def identity_matrix(size: int) -> Matrix:
         matrix.append(new_row)
 
     return matrix
-   
+
+
+def gf2_row_echelon_form(matrix: Matrix) -> Matrix:
+
+    if not matrix:
+        raise ValueError("Matrix must not be empty.")
+
+    number_of_columns = len(matrix[0])
+
+    if any(len(row) != number_of_columns for row in matrix):
+        raise ValueError("All matrix rows must have the same length.")
+
+    result = [row.copy() for row in matrix]
+
+    pivot_row = 0
+
+    for column in range(number_of_columns):
+        pivot = None
+
+        for row in range(pivot_row, len(result)):
+            if result[row][column] == 1:
+                pivot = row
+                break
+
+        if pivot is None:
+            continue
+
+        result[pivot_row], result[pivot] = result[pivot], result[pivot_row]
+
+        for row in range(pivot_row + 1, len(result)):
+            if result[row][column] == 1:
+                result[row] = gf2_add_vectors(result[row], result[pivot_row])
+
+        pivot_row += 1
+
+        if pivot_row == len(result):
+            break
+
+    return result
