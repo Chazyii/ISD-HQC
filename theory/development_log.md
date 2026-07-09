@@ -164,12 +164,50 @@ All operations are currently implemented using standard Python data structures t
 
 ---
 
-## Next milestone
-
 # Milestone 4 — Prange Algorithm
 
-- Information Set selection
-- Solving the induced linear system
-- Complete Prange algorithm implementation
-- Validation on Syndrome Decoding instances
-- Runtime and memory measurements
+**Date:** 2026-07-09
+
+## Goal
+
+Begin the implementation of the Prange Information Set Decoding algorithm by developing and testing its fundamental building blocks.
+
+
+## Implemented
+
+### algorithms/prange.py
+
+- Random information set selection
+
+## Tested
+
+### algorithms/prange.py
+
+#### Information set selection
+
+- correct information set size
+- unique indices
+- sorted indices
+- indices within valid range
+- invalid code length
+- invalid code dimension
+
+All tests passed.
+
+## Notes
+
+The first component of the Prange algorithm has been implemented.
+
+At this stage the algorithm is capable of generating random information sets, which represent the hypothesis that the selected positions are error-free. This operation is the starting point of every iteration of the Prange decoding procedure.
+
+---
+
+## Next milestone
+
+Continue implementing the Prange algorithm:
+
+- construct the induced linear system
+- solve the induced linear system
+- reconstruct the candidate error vector
+- verify the candidate solution
+- implement the complete Prange decoding loop
