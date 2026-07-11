@@ -1,6 +1,9 @@
 import pytest
 
-from isd_hqc.algorithms.prange import select_information_set
+from isd_hqc.algorithms.prange import (
+    construct_induced_system,
+    select_information_set,
+)
 
 def test_information_set_has_correct_size():
     information_set = select_information_set(10, 4)
@@ -39,3 +42,56 @@ def test_information_set_invalid_length():
 def test_information_set_negative_dimension():
     with pytest.raises(ValueError):
         select_information_set(10, -1)
+
+
+
+
+
+def test_construct_induced_system():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    syndrome = [1, 0]
+    information_set = [0, 1]
+
+    induced_matrix, induced_syndrome, complement = construct_induced_system(
+        parity_check_matrix,
+        syndrome,
+        information_set,
+    )
+
+    assert induced_matrix == [
+        [1, 1],
+        [1, 0],
+    ]
+    assert induced_syndrome == [1, 0]
+    assert complement == [2, 3]
+
+
+def test_construct_induced_system_invalid_information_set_size():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+
+    with pytest.raises(ValueError):
+        construct_induced_system(
+            parity_check_matrix,
+            [1, 0],
+            [0],
+        )
+
+
+def test_construct_induced_system_invalid_syndrome_size():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+
+    with pytest.raises(ValueError):
+        construct_induced_system(
+            parity_check_matrix,
+            [1],
+            [0, 1],
+        )
