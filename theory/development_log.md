@@ -164,20 +164,24 @@ All operations are currently implemented using standard Python data structures t
 
 ---
 
-# Milestone 4 — Prange Algorithm
+# Milestone 4 — Prange Algorithm Foundations
 
-**Date:** 2026-07-09
+**Date:** 2026-07-12
 
 ## Goal
 
-Begin the implementation of the Prange Information Set Decoding algorithm by developing and testing its fundamental building blocks.
-
+Develop the fundamental building blocks required for the implementation of the Prange Information Set Decoding algorithm.
 
 ## Implemented
 
 ### algorithms/prange.py
 
 - Random information set selection
+- Construction of the induced linear system
+
+### linear_algebra.py
+
+- Gaussian elimination solver for linear systems over GF(2)
 
 ## Tested
 
@@ -192,13 +196,41 @@ Begin the implementation of the Prange Information Set Decoding algorithm by dev
 - invalid code length
 - invalid code dimension
 
+#### Induced linear system construction
+
+- correct induced matrix
+- correct complement construction
+- syndrome preservation
+- invalid parity-check matrix
+- invalid syndrome length
+- invalid information set size
+- duplicate information set indices
+- information set indices out of range
+
+### linear_algebra.py
+
+#### Linear system solver
+
+- correct solution
+- row swapping
+- singular matrix
+- inconsistent system
+- empty matrix
+- invalid matrix
+- non-square matrix
+- invalid vector length
+
 All tests passed.
 
 ## Notes
 
-The first component of the Prange algorithm has been implemented.
+The implementation now supports the first computational stage of the Prange algorithm.
 
-At this stage the algorithm is capable of generating random information sets, which represent the hypothesis that the selected positions are error-free. This operation is the starting point of every iteration of the Prange decoding procedure.
+Given a randomly selected information set, the corresponding induced linear system can be constructed by extracting the complement columns of the parity-check matrix.
+
+A general solver for linear systems over GF(2) has also been implemented. This solver will be reused by the Prange algorithm and may also be employed by subsequent ISD algorithms.
+
+The remaining implementation of Prange will build upon these components.
 
 ---
 
@@ -206,8 +238,7 @@ At this stage the algorithm is capable of generating random information sets, wh
 
 Continue implementing the Prange algorithm:
 
-- construct the induced linear system
-- solve the induced linear system
+- solve the induced linear system inside Prange
 - reconstruct the candidate error vector
 - verify the candidate solution
-- implement the complete Prange decoding loop
+- implement the complete decoding loop

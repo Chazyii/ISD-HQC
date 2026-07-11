@@ -9,6 +9,7 @@ from isd_hqc.linear_algebra import (
     gf2_matrix_matrix_mul,
     gf2_row_echelon_form,
     gf2_rank,
+    gf2_solve_linear_system,
 )
 
 
@@ -217,3 +218,90 @@ def test_gf2_rank_zero_matrix():
     ]
 
     assert gf2_rank(matrix) == 0
+
+
+
+def test_gf2_solve_linear_system():
+    matrix = [
+        [1, 1],
+        [1, 0],
+    ]
+    vector = [1, 0]
+
+    solution = gf2_solve_linear_system(matrix, vector)
+
+    assert solution == [0, 1]
+
+
+def test_gf2_solve_linear_system_requires_row_swap():
+    matrix = [
+        [0, 1],
+        [1, 1],
+    ]
+    vector = [1, 0]
+
+    solution = gf2_solve_linear_system(matrix, vector)
+
+    assert solution == [1, 1]
+
+
+def test_gf2_solve_linear_system_singular_matrix():
+    matrix = [
+        [1, 1],
+        [1, 1],
+    ]
+    vector = [0, 0]
+
+    solution = gf2_solve_linear_system(matrix, vector)
+
+    assert solution is None
+
+
+def test_gf2_solve_linear_system_inconsistent_system():
+    matrix = [
+        [1, 1],
+        [1, 1],
+    ]
+    vector = [0, 1]
+
+    solution = gf2_solve_linear_system(matrix, vector)
+
+    assert solution is None
+
+
+def test_gf2_solve_linear_system_empty_matrix():
+    with pytest.raises(ValueError):
+        gf2_solve_linear_system([], [])
+
+
+def test_gf2_solve_linear_system_invalid_matrix():
+    matrix = [
+        [1, 0],
+        [1],
+    ]
+    vector = [1, 0]
+
+    with pytest.raises(ValueError):
+        gf2_solve_linear_system(matrix, vector)
+
+
+def test_gf2_solve_linear_system_non_square_matrix():
+    matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+    vector = [1, 0]
+
+    with pytest.raises(ValueError):
+        gf2_solve_linear_system(matrix, vector)
+
+
+def test_gf2_solve_linear_system_invalid_vector_length():
+    matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+    vector = [1]
+
+    with pytest.raises(ValueError):
+        gf2_solve_linear_system(matrix, vector)

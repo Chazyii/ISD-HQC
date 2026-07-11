@@ -160,3 +160,68 @@ def gf2_rank(matrix: Matrix) -> int:
             rank += 1
 
     return rank
+
+
+
+def gf2_solve_linear_system(
+    matrix: Matrix,
+    vector: Vector,
+) -> Vector | None:
+
+    if not matrix:
+        raise ValueError("Matrix must not be empty.")
+
+    number_of_rows = len(matrix)
+    number_of_columns = len(matrix[0])
+
+    if any(len(row) != number_of_columns for row in matrix):
+        raise ValueError("All matrix rows must have the same length.")
+
+    if number_of_rows != number_of_columns:
+        raise ValueError("Matrix must be square.")
+
+    if len(vector) != number_of_rows:
+        raise ValueError(
+            "Vector length must match the number of matrix rows."
+        )
+
+    augmented_matrix = []
+
+    for row_index in range(number_of_rows):
+        augmented_row = matrix[row_index].copy()
+        augmented_row.append(vector[row_index])
+        augmented_matrix.append(augmented_row)
+
+    pivot_row = 0
+
+    for column in range(number_of_columns):
+        pivot = None
+
+        for row in range(pivot_row, number_of_rows):
+            if augmented_matrix[row][column] == 1:
+                pivot = row
+                break
+
+        if pivot is None:
+            return None
+
+        augmented_matrix[pivot_row], augmented_matrix[pivot] = (
+            augmented_matrix[pivot],
+            augmented_matrix[pivot_row],
+        )
+
+        for row in range(number_of_rows):
+            if row != pivot_row and augmented_matrix[row][column] == 1:
+                augmented_matrix[row] = gf2_add_vectors(
+                    augmented_matrix[row],
+                    augmented_matrix[pivot_row],
+                )
+
+        pivot_row += 1
+
+    solution = []
+
+    for row in range(number_of_rows):
+        solution.append(augmented_matrix[row][-1])
+
+    return solution
