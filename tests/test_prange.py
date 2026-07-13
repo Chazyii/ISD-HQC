@@ -3,6 +3,7 @@ import pytest
 from isd_hqc.algorithms.prange import (
     construct_induced_system,
     select_information_set,
+    solve_induced_system,
 )
 
 def test_information_set_has_correct_size():
@@ -95,3 +96,51 @@ def test_construct_induced_system_invalid_syndrome_size():
             [1],
             [0, 1],
         )
+
+
+
+#solve induced system
+
+def test_solve_induced_system():
+    induced_matrix = [
+        [1, 1],
+        [1, 0],
+    ]
+    syndrome = [1, 0]
+
+    solution = solve_induced_system(
+        induced_matrix,
+        syndrome,
+    )
+
+    assert solution == [0, 1]
+
+
+def test_solve_induced_system_requires_row_swap():
+    induced_matrix = [
+        [0, 1],
+        [1, 1],
+    ]
+    syndrome = [1, 0]
+
+    solution = solve_induced_system(
+        induced_matrix,
+        syndrome,
+    )
+
+    assert solution == [1, 1]
+
+
+def test_solve_induced_system_singular_matrix():
+    induced_matrix = [
+        [1, 1],
+        [1, 1],
+    ]
+    syndrome = [0, 0]
+
+    solution = solve_induced_system(
+        induced_matrix,
+        syndrome,
+    )
+
+    assert solution is None

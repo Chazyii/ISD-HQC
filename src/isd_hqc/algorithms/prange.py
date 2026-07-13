@@ -3,7 +3,11 @@ Implementation of the Prange ISD algorithm.
 """
 
 import random
-from isd_hqc.linear_algebra import Matrix, Vector
+from isd_hqc.linear_algebra import (
+    Matrix,
+    Vector,
+    gf2_solve_linear_system,
+)
 
 
 def select_information_set(length: int, dimension: int) -> list[int]:
@@ -62,3 +66,15 @@ def construct_induced_system(
     ]
 
     return induced_matrix, syndrome.copy(), complement
+
+
+
+def solve_induced_system(
+    induced_matrix: Matrix,
+    syndrome: Vector,
+) -> Vector | None:
+
+    return gf2_solve_linear_system(
+        induced_matrix,
+        syndrome,
+    )
