@@ -8,6 +8,7 @@ from isd_hqc.linear_algebra import (
     Vector,
     gf2_solve_linear_system,
 )
+from isd_hqc.syndrome import verify_solution
 
 
 def select_information_set(length: int, dimension: int) -> list[int]:
@@ -107,3 +108,19 @@ def reconstruct_candidate_error(
         candidate_error[index] = partial_error[position]
 
     return candidate_error
+
+
+
+def verify_candidate(
+    parity_check_matrix: Matrix,
+    candidate_error: Vector,
+    syndrome: Vector,
+    weight: int,
+) -> bool:
+
+    return verify_solution(
+        parity_check_matrix=parity_check_matrix,
+        error=candidate_error,
+        syndrome=syndrome,
+        weight=weight,
+    )
