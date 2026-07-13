@@ -78,3 +78,32 @@ def solve_induced_system(
         induced_matrix,
         syndrome,
     )
+
+
+def reconstruct_candidate_error(
+    length: int,
+    partial_error: Vector,
+    complement: list[int],
+) -> Vector:
+
+    if length <= 0:
+        raise ValueError("Length must be positive.")
+
+    if len(partial_error) != len(complement):
+        raise ValueError(
+            "Partial error length must match the complement size."
+        )
+
+    if len(complement) != len(set(complement)):
+        raise ValueError("Complement indices must be unique.")
+
+    if any(index < 0 or index >= length for index in complement):
+        raise ValueError("Complement index is out of range.")
+
+    candidate_error = [0] * length
+
+    for position in range(len(complement)):
+        index = complement[position]
+        candidate_error[index] = partial_error[position]
+
+    return candidate_error
