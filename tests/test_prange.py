@@ -6,6 +6,7 @@ from isd_hqc.algorithms.prange import (
     solve_induced_system,
     reconstruct_candidate_error,
     verify_candidate,
+    prange_decode,
 )
 
 def test_information_set_has_correct_size():
@@ -275,3 +276,151 @@ def test_verify_candidate_invalid_weight():
     )
 
     assert not result
+
+
+#prange decode
+
+def test_prange_decode_finds_error(monkeypatch):
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    syndrome = [1, 1]
+
+    def fixed_information_set(length, dimension):
+        return [0, 1]
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.prange.select_information_set",
+        fixed_information_set,
+    )
+
+    result = prange_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        weight=1,
+        max_iterations=1,
+    )
+
+    assert result == [0, 0, 1, 0]
+
+
+def test_prange_decode_retries_after_invalid_candidate(monkeypatch):
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    syndrome = [1, 1]
+
+    information_sets = [
+        [2, 3],
+        [0, 1],
+    ]
+
+    def controlled_information_set(length, dimension):
+        return information_sets.pop(0)
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.prange.select_information_set",
+        controlled_information_set,
+    )
+
+    result = prange_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        weight=1,
+        max_iterations=2,
+    )
+
+    assert result == [0, 0, 1, 0]
+
+
+def test_prange_decode_returns_none_after_max_iterations(monkeypatch):
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    syndrome = [1, 1]
+
+    def unsuccessful_information_set(length, dimension):
+        return [2, 3]
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.prange.select_information_set",
+        unsuccessful_information_set,
+    )
+
+    result = prange_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        weight=1,
+        max_iterations=3,
+    )
+
+    assert result is None
+
+
+def test_prange_decode_empty_matrix():
+    with pytest.raises(ValueError):
+        prange_decode(
+            parity_check_matrix=[],
+            syndrome=[],
+            weight=1,
+        )
+
+
+def test_prange_decode_invalid_matrix():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1],
+    ]
+
+    with pytest.raises(ValueError):
+        prange_decode(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            weight=1,
+        )
+
+
+def test_prange_decode_invalid_syndrome_length():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(ValueError):
+        prange_decode(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1],
+            weight=1,
+        )
+
+
+def test_prange_decode_invalid_weight():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(ValueError):
+        prange_decode(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            weight=4,
+        )
+
+
+def test_prange_decode_invalid_max_iterations():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(ValueError):
+        prange_decode(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            weight=1,
+            max_iterations=0,
+        )
