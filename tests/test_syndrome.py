@@ -6,6 +6,7 @@ from isd_hqc.syndrome import (
     generate_random_error,
     generate_random_parity_check_matrix,
     verify_solution,
+    generate_sd_instance,
 )
 
 def test_generate_random_error_has_correct_length():
@@ -107,3 +108,42 @@ def test_verify_solution_invalid_weight():
     syndrome = [0, 1]
 
     assert not verify_solution(parity_check_matrix, error, syndrome, weight=1)
+
+
+#generate instatnce test
+def test_generate_sd_instance_has_correct_dimensions():
+    parity_check_matrix, error, syndrome = generate_sd_instance(
+        rows=3,
+        columns=5,
+        weight=2,
+    )
+
+    assert len(parity_check_matrix) == 3
+    assert all(len(row) == 5 for row in parity_check_matrix)
+    assert len(error) == 5
+    assert len(syndrome) == 3
+
+
+def test_generate_sd_instance_has_correct_error_weight():
+    _, error, _ = generate_sd_instance(
+        rows=3,
+        columns=5,
+        weight=2,
+    )
+
+    assert hamming_weight(error) == 2
+
+
+def test_generate_sd_instance_is_valid():
+    parity_check_matrix, error, syndrome = generate_sd_instance(
+        rows=3,
+        columns=5,
+        weight=2,
+    )
+
+    assert verify_solution(
+        parity_check_matrix=parity_check_matrix,
+        error=error,
+        syndrome=syndrome,
+        weight=2,
+    )

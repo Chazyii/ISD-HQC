@@ -51,3 +51,27 @@ def verify_solution(
         return False
 
     return compute_syndrome(parity_check_matrix, error) == syndrome
+
+
+def generate_sd_instance(
+    rows: int,
+    columns: int,
+    weight: int,
+) -> tuple[Matrix, Vector, Vector]:
+
+    parity_check_matrix = generate_random_parity_check_matrix(
+        rows=rows,
+        columns=columns,
+    )
+
+    error = generate_random_error(
+        length=columns,
+        weight=weight,
+    )
+
+    syndrome = compute_syndrome(
+        parity_check_matrix=parity_check_matrix,
+        error=error,
+    )
+
+    return parity_check_matrix, error, syndrome
