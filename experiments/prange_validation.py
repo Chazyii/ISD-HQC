@@ -3,6 +3,7 @@ Experimental validation of the Prange ISD implementation.
 """
 
 import random
+import time
 
 from isd_hqc.algorithms.prange import prange_decode
 from isd_hqc.syndrome import (
@@ -27,6 +28,7 @@ def run_prange_validation(
 
     successful = 0
     failed = 0
+    execution_times: list[float] = []
 
     for _ in range(number_of_experiments):
         parity_check_matrix, _, syndrome = generate_sd_instance(
@@ -35,12 +37,19 @@ def run_prange_validation(
             weight=weight,
         )
 
+        start_time = time.perf_counter()
+
         decoded_error = prange_decode(
             parity_check_matrix=parity_check_matrix,
             syndrome=syndrome,
             weight=weight,
             max_iterations=max_iterations,
         )
+
+        end_time = time.perf_counter()
+
+        elapsed_time = end_time - start_time
+        execution_times.append(elapsed_time)
 
         if decoded_error is None:
             failed += 1
@@ -58,11 +67,20 @@ def run_prange_validation(
 
     success_rate = successful / number_of_experiments
 
+    total_time = sum(execution_times)
+    average_time = total_time / number_of_experiments
+    minimum_time = min(execution_times)
+    maximum_time = max(execution_times)
+
     return {
         "experiments": number_of_experiments,
         "successful": successful,
         "failed": failed,
         "success_rate": success_rate,
+        "total_time": total_time,
+        "average_time": average_time,
+        "minimum_time": minimum_time,
+        "maximum_time": maximum_time,
     }
 
 
@@ -77,11 +95,17 @@ def main() -> None:
     )
 
     print("Prange validation results")
-    print("-------------------------")
-    print(f"Experiments: {results['experiments']}")
-    print(f"Successful:  {results['successful']}")
-    print(f"Failed:      {results['failed']}")
+    print(f"Experiments:  {results['experiments']}")
+    print(f"Successful:   {results['successful']}")
+    print(f"Failed:       {results['failed']}")
     print(f"Success rate: {results['success_rate']:.2%}")
+    print()
+
+    print("Execution time")
+    print(f"Total time:   {results['total_time']:.6f} s")
+    print(f"Average time: {results['average_time']:.6f} s")
+    print(f"Minimum time: {results['minimum_time']:.6f} s")
+    print(f"Maximum time: {results['maximum_time']:.6f} s")
 
 
 if __name__ == "__main__":

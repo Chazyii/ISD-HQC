@@ -1,3 +1,5 @@
+import pytest
+
 from experiments.prange_validation import run_prange_validation
 
 
@@ -48,4 +50,30 @@ def test_run_prange_validation(monkeypatch):
     assert results["experiments"] == 3
     assert results["successful"] == 2
     assert results["failed"] == 1
-    assert results["success_rate"] == 2 / 3
+    assert results["success_rate"] == pytest.approx(2 / 3)
+
+    assert results["total_time"] >= 0
+    assert results["average_time"] >= 0
+    assert results["minimum_time"] >= 0
+    assert results["maximum_time"] >= 0
+
+    assert results["minimum_time"] <= results["maximum_time"]
+
+    assert results["average_time"] == pytest.approx(
+        results["total_time"] / results["experiments"]
+    )
+
+
+def test_run_prange_validation_rejects_non_positive_experiment_count():
+    with pytest.raises(
+        ValueError,
+        match="Number of experiments must be positive.",
+    ):
+        run_prange_validation(
+            number_of_experiments=0,
+            rows=2,
+            columns=3,
+            weight=1,
+            max_iterations=100,
+            seed=42,
+        )
