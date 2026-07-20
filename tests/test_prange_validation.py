@@ -1,6 +1,11 @@
+import csv
+
 import pytest
 
-from experiments.prange_validation import run_prange_validation
+from experiments.prange_validation import (
+    run_prange_validation,
+    save_results_to_csv,
+)
 
 
 def test_run_prange_validation(monkeypatch):
@@ -63,6 +68,27 @@ def test_run_prange_validation(monkeypatch):
         results["total_time"] / results["experiments"]
     )
 
+    experiment_results = results["experiment_results"]
+
+    assert len(experiment_results) == 3
+
+    assert experiment_results[0]["experiment_id"] == 1
+    assert experiment_results[0]["success"] is True
+
+    assert experiment_results[1]["experiment_id"] == 2
+    assert experiment_results[1]["success"] is False
+
+    assert experiment_results[2]["experiment_id"] == 3
+    assert experiment_results[2]["success"] is True
+
+    for result in experiment_results:
+        assert result["rows"] == 2
+        assert result["columns"] == 3
+        assert result["weight"] == 1
+        assert result["max_iterations"] == 100
+        assert result["seed"] == 42
+        assert result["execution_time"] >= 0
+
 
 def test_run_prange_validation_rejects_non_positive_experiment_count():
     with pytest.raises(
@@ -77,3 +103,55 @@ def test_run_prange_validation_rejects_non_positive_experiment_count():
             max_iterations=100,
             seed=42,
         )
+
+
+def test_save_results_to_csv(tmp_path):
+    experiment_results = [
+        {
+            "experiment_id": 1,
+            "rows": 2,
+            "columns": 3,
+            "weight": 1,
+            "max_iterations": 100,
+            "seed": 42,
+            "success": True,
+            "execution_time": 0.001,
+        },
+        {
+            "experiment_id": 2,
+            "rows": 2,
+            "columns": 3,
+            "weight": 1,
+            "max_iterations": 100,
+            "seed": 42,
+            "success": False,
+            "execution_time": 0.002,
+        },
+    ]
+
+    output_path = tmp_path / "results.csv"
+
+    save_results_to_csv(
+        experiment_results=experiment_results,
+        output_path=output_path,
+    )
+
+    assert output_path.exists()
+
+    with output_path.open(
+        mode="r",
+        newline="",
+        encoding="utf-8",
+    ) as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+
+    assert len(rows) == 2
+
+    assert rows[0]["experiment_id"] == "1"
+    assert rows[0]["success"] == "True"
+    assert rows[0]["execution_time"] == "0.001"
+
+    assert rows[1]["experiment_id"] == "2"
+    assert rows[1]["success"] == "False"
+    assert rows[1]["execution_time"] == "0.002"
