@@ -2,7 +2,7 @@
 Implementation of the Stern ISD algorithm.
 """
 from itertools import combinations
-
+from isd_hqc.linear_algebra import gf2_matrix_vector_mul
 
 def generate_weight_vectors(
     length: int,
@@ -47,3 +47,42 @@ def generate_weight_vectors(
         vectors.append(vector)
 
     return vectors
+
+
+def compute_partial_syndrome(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    partial_error: list[int],
+) -> list[int]:
+    """
+    Compute the syndrome contribution of a partial error vector.
+    The partial error is defined only on the selected column positions
+    of the parity-check matrix.
+
+    """
+
+    if len(positions) != len(partial_error):
+        raise ValueError(
+            "Number of positions must match partial error length."
+        )
+
+    if not parity_check_matrix:
+        return []
+
+    number_of_columns = len(parity_check_matrix[0])
+
+    for position in positions:
+        if position < 0 or position >= number_of_columns:
+            raise IndexError(
+                "Partial error position is outside the matrix range."
+            )
+
+    partial_matrix = [
+        [row[position] for position in positions]
+        for row in parity_check_matrix
+    ]
+
+    return gf2_matrix_vector_mul(
+        partial_matrix,
+        partial_error,
+    )
