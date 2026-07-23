@@ -86,3 +86,38 @@ def compute_partial_syndrome(
         partial_matrix,
         partial_error,
     )
+
+
+
+def build_partial_syndrome_list(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    weight: int,
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Build a list of partial syndromes and their corresponding
+    fixed-weight partial error vectors.
+    """
+
+    partial_errors = generate_weight_vectors(
+        length=len(positions),
+        weight=weight,
+    )
+
+    syndrome_list: list[tuple[list[int], list[int]]] = []
+
+    for partial_error in partial_errors:
+        partial_syndrome = compute_partial_syndrome(
+            parity_check_matrix=parity_check_matrix,
+            positions=positions,
+            partial_error=partial_error,
+        )
+
+        syndrome_list.append(
+            (
+                partial_syndrome,
+                partial_error,
+            )
+        )
+
+    return syndrome_list

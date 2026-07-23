@@ -1,6 +1,7 @@
 import pytest
 
 from isd_hqc.algorithms.stern import (
+    build_partial_syndrome_list,
     compute_partial_syndrome,
     generate_weight_vectors,
 )
@@ -183,3 +184,70 @@ def test_compute_partial_syndrome_rejects_invalid_position():
             positions=[3],
             partial_error=[1],
         )
+
+
+def test_build_partial_syndrome_list():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    result = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2],
+        weight=1,
+    )
+
+    assert result == [
+        ([1, 0], [1, 0, 0]),
+        ([0, 1], [0, 1, 0]),
+        ([1, 1], [0, 0, 1]),
+    ]
+
+
+def test_build_partial_syndrome_list_count():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+
+    result = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        weight=2,
+    )
+
+    assert len(result) == 6
+
+
+def test_build_partial_syndrome_list_preserves_weight():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+
+    result = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        weight=2,
+    )
+
+    for _, partial_error in result:
+        assert sum(partial_error) == 2
+
+
+def test_build_partial_syndrome_list_zero_weight():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    result = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        weight=0,
+    )
+
+    assert result == [
+        ([0, 0], [0, 0]),
+    ]
