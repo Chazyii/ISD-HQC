@@ -121,3 +121,26 @@ def build_partial_syndrome_list(
         )
 
     return syndrome_list
+
+
+def find_syndrome_collisions(
+    left_list: list[tuple[list[int], list[int]]],
+    right_list: list[tuple[list[int], list[int]]],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Find matching partial syndromes between two candidate lists.
+    """
+
+    collisions: list[tuple[list[int], list[int]]] = []
+
+    for left_syndrome, left_error in left_list:
+        for right_syndrome, right_error in right_list:
+            if left_syndrome == right_syndrome:
+                collisions.append(
+                    (
+                        left_error,
+                        right_error,
+                    )
+                )
+
+    return collisions

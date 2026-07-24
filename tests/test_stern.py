@@ -4,6 +4,7 @@ from isd_hqc.algorithms.stern import (
     build_partial_syndrome_list,
     compute_partial_syndrome,
     generate_weight_vectors,
+    find_syndrome_collisions,
 )
 
 
@@ -251,3 +252,77 @@ def test_build_partial_syndrome_list_zero_weight():
     assert result == [
         ([0, 0], [0, 0]),
     ]
+
+
+def test_find_syndrome_collisions():
+    left_list = [
+        ([1, 0], [1, 0]),
+        ([0, 1], [0, 1]),
+    ]
+
+    right_list = [
+        ([0, 1], [1, 0]),
+        ([1, 1], [0, 1]),
+    ]
+
+    collisions = find_syndrome_collisions(
+        left_list=left_list,
+        right_list=right_list,
+    )
+
+    assert collisions == [
+        (
+            [0, 1],
+            [1, 0],
+        ),
+    ]
+
+def test_find_syndrome_collisions_with_multiple_matches():
+    left_list = [
+        ([1, 0], [1, 0]),
+        ([1, 0], [0, 1]),
+    ]
+
+    right_list = [
+        ([1, 0], [1, 1]),
+    ]
+
+    collisions = find_syndrome_collisions(
+        left_list=left_list,
+        right_list=right_list,
+    )
+
+    assert collisions == [
+        (
+            [1, 0],
+            [1, 1],
+        ),
+        (
+            [0, 1],
+            [1, 1],
+        ),
+    ]
+
+def test_find_syndrome_collisions_without_matches():
+    left_list = [
+        ([1, 0], [1, 0]),
+    ]
+
+    right_list = [
+        ([0, 1], [0, 1]),
+    ]
+
+    collisions = find_syndrome_collisions(
+        left_list=left_list,
+        right_list=right_list,
+    )
+
+    assert collisions == []
+
+def test_find_syndrome_collisions_with_empty_lists():
+    collisions = find_syndrome_collisions(
+        left_list=[],
+        right_list=[],
+    )
+
+    assert collisions == []
