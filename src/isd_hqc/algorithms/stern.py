@@ -144,3 +144,46 @@ def find_syndrome_collisions(
                 )
 
     return collisions
+
+
+def reconstruct_candidate_error(
+    left_positions: list[int],
+    left_error: list[int],
+    right_positions: list[int],
+    right_error: list[int],
+    length: int,
+) -> list[int]:
+    """
+    Reconstruct a full candidate error vector from two partial errors.
+
+    """
+
+    if len(left_positions) != len(left_error):
+        raise ValueError(
+            "Left positions must match left partial error length."
+        )
+
+    if len(right_positions) != len(right_error):
+        raise ValueError(
+            "Right positions must match right partial error length."
+        )
+
+    candidate_error = [0] * length
+
+    for position, value in zip(left_positions, left_error):
+        if position < 0 or position >= length:
+            raise IndexError(
+                "Left position is outside the candidate error vector."
+            )
+
+        candidate_error[position] = value
+
+    for position, value in zip(right_positions, right_error):
+        if position < 0 or position >= length:
+            raise IndexError(
+                "Right position is outside the candidate error vector."
+            )
+
+        candidate_error[position] = value
+
+    return candidate_error

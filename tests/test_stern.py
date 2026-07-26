@@ -5,6 +5,7 @@ from isd_hqc.algorithms.stern import (
     compute_partial_syndrome,
     generate_weight_vectors,
     find_syndrome_collisions,
+    reconstruct_candidate_error,
 )
 
 
@@ -326,3 +327,79 @@ def test_find_syndrome_collisions_with_empty_lists():
     )
 
     assert collisions == []
+
+
+
+def test_reconstruct_candidate_error():
+    result = reconstruct_candidate_error(
+        left_positions=[0, 2],
+        left_error=[1, 1],
+        right_positions=[4],
+        right_error=[1],
+        length=6,
+    )
+
+    assert result == [
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+    ]
+
+def test_reconstruct_candidate_error_with_zero_values():
+    result = reconstruct_candidate_error(
+        left_positions=[0, 2],
+        left_error=[0, 0],
+        right_positions=[3],
+        right_error=[1],
+        length=5,
+    )
+
+    assert result == [
+        0,
+        0,
+        0,
+        1,
+        0,
+    ]
+
+def test_reconstruct_candidate_error_rejects_left_length_mismatch():
+    with pytest.raises(
+        ValueError,
+        match="Left positions must match left partial error length.",
+    ):
+        reconstruct_candidate_error(
+            left_positions=[0, 1],
+            left_error=[1],
+            right_positions=[],
+            right_error=[],
+            length=4,
+        )
+
+def test_reconstruct_candidate_error_rejects_invalid_left_position():
+    with pytest.raises(
+        IndexError,
+        match="Left position is outside the candidate error vector.",
+    ):
+        reconstruct_candidate_error(
+            left_positions=[5],
+            left_error=[1],
+            right_positions=[],
+            right_error=[],
+            length=5,
+        )
+
+def test_reconstruct_candidate_error_rejects_invalid_right_position():
+    with pytest.raises(
+        IndexError,
+        match="Right position is outside the candidate error vector.",
+    ):
+        reconstruct_candidate_error(
+            left_positions=[],
+            left_error=[],
+            right_positions=[6],
+            right_error=[1],
+            length=5,
+        )
