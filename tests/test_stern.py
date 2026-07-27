@@ -6,8 +6,9 @@ from isd_hqc.algorithms.stern import (
     generate_weight_vectors,
     find_syndrome_collisions,
     reconstruct_candidate_error,
+    stern_decode,
 )
-
+from isd_hqc.syndrome import verify_solution
 
 def test_generate_weight_vectors():
     vectors = generate_weight_vectors(
@@ -255,7 +256,8 @@ def test_build_partial_syndrome_list_zero_weight():
     ]
 
 
-def test_find_syndrome_collisions():
+
+def test_find_syndrome_collisions_finds_matching_pair():
     left_list = [
         ([1, 0], [1, 0]),
         ([0, 1], [0, 1]),
@@ -263,48 +265,53 @@ def test_find_syndrome_collisions():
 
     right_list = [
         ([0, 1], [1, 0]),
-        ([1, 1], [0, 1]),
+        ([0, 0], [0, 1]),
     ]
 
-    collisions = find_syndrome_collisions(
+    result = find_syndrome_collisions(
         left_list=left_list,
         right_list=right_list,
+        target_syndrome=[1, 1],
     )
 
-    assert collisions == [
+    assert result == [
         (
-            [0, 1],
+            [1, 0],
             [1, 0],
         ),
     ]
 
-def test_find_syndrome_collisions_with_multiple_matches():
+
+def test_find_syndrome_collisions_finds_multiple_pairs():
     left_list = [
         ([1, 0], [1, 0]),
-        ([1, 0], [0, 1]),
+        ([0, 1], [0, 1]),
     ]
 
     right_list = [
-        ([1, 0], [1, 1]),
+        ([0, 1], [1, 1]),
+        ([1, 0], [0, 0]),
     ]
 
-    collisions = find_syndrome_collisions(
+    result = find_syndrome_collisions(
         left_list=left_list,
         right_list=right_list,
+        target_syndrome=[1, 1],
     )
 
-    assert collisions == [
+    assert result == [
         (
             [1, 0],
             [1, 1],
         ),
         (
             [0, 1],
-            [1, 1],
+            [0, 0],
         ),
     ]
 
-def test_find_syndrome_collisions_without_matches():
+
+def test_find_syndrome_collisions_returns_empty_list_without_matches():
     left_list = [
         ([1, 0], [1, 0]),
     ]
@@ -313,20 +320,14 @@ def test_find_syndrome_collisions_without_matches():
         ([0, 1], [0, 1]),
     ]
 
-    collisions = find_syndrome_collisions(
+    result = find_syndrome_collisions(
         left_list=left_list,
         right_list=right_list,
+        target_syndrome=[0, 0],
     )
 
-    assert collisions == []
+    assert result == []
 
-def test_find_syndrome_collisions_with_empty_lists():
-    collisions = find_syndrome_collisions(
-        left_list=[],
-        right_list=[],
-    )
-
-    assert collisions == []
 
 
 
@@ -403,3 +404,71 @@ def test_reconstruct_candidate_error_rejects_invalid_right_position():
             right_error=[1],
             length=5,
         )
+
+
+
+def test_stern_decode_finds_solution():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    syndrome = [1, 1]
+
+    result = stern_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_positions=[0],
+        right_positions=[1],
+        left_weight=1,
+        right_weight=1,
+    )
+
+    assert result == [1, 1]
+
+
+def test_stern_decode_returns_none_when_weights_exclude_solution():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    syndrome = [1, 1]
+
+    result = stern_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_positions=[0],
+        right_positions=[1],
+        left_weight=0,
+        right_weight=0,
+    )
+
+    assert result is None
+
+
+def test_stern_decode_returns_complete_valid_error_vector():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    syndrome = [1, 1]
+
+    result = stern_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_positions=[0, 1],
+        right_positions=[2, 3],
+        left_weight=1,
+        right_weight=1,
+    )
+
+    assert result is not None
+    assert len(result) == 4
+    assert sum(result) == 2
+    assert verify_solution(
+        parity_check_matrix,
+        result,
+        syndrome,
+    )

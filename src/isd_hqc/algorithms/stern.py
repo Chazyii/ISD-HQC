@@ -3,6 +3,7 @@ Implementation of the Stern ISD algorithm.
 """
 from itertools import combinations
 from isd_hqc.linear_algebra import gf2_matrix_vector_mul
+from isd_hqc.syndrome import verify_solution
 
 def generate_weight_vectors(
     length: int,
@@ -11,20 +12,6 @@ def generate_weight_vectors(
     """
     Generate all binary vectors of a given length and Hamming weight.
 
-    Args:
-        length:
-            Length of each generated binary vector.
-        weight:
-            Required Hamming weight of each vector.
-
-    Returns:
-        A list containing all binary vectors of the specified length
-        and Hamming weight.
-
-    Raises:
-        ValueError:
-            If length is negative, weight is negative, or weight
-            is greater than length.
     """
 
     if length < 0:
@@ -126,16 +113,36 @@ def build_partial_syndrome_list(
 def find_syndrome_collisions(
     left_list: list[tuple[list[int], list[int]]],
     right_list: list[tuple[list[int], list[int]]],
+    target_syndrome: list[int],
 ) -> list[tuple[list[int], list[int]]]:
     """
-    Find matching partial syndromes between two candidate lists.
+    Find pairs of partial errors whose syndrome contributions
+    combine to the target syndrome over GF(2).
     """
 
     collisions: list[tuple[list[int], list[int]]] = []
 
     for left_syndrome, left_error in left_list:
+        if len(left_syndrome) != len(target_syndrome):
+            raise ValueError(
+                "Left partial syndrome length must match target syndrome length."
+            )
+
         for right_syndrome, right_error in right_list:
-            if left_syndrome == right_syndrome:
+            if len(right_syndrome) != len(target_syndrome):
+                raise ValueError(
+                    "Right partial syndrome length must match target syndrome length."
+                )
+
+            combined_syndrome = [
+                left_bit ^ right_bit
+                for left_bit, right_bit in zip(
+                    left_syndrome,
+                    right_syndrome,
+                )
+            ]
+
+            if combined_syndrome == target_syndrome:
                 collisions.append(
                     (
                         left_error,
@@ -144,6 +151,7 @@ def find_syndrome_collisions(
                 )
 
     return collisions
+
 
 
 def reconstruct_candidate_error(
@@ -155,7 +163,6 @@ def reconstruct_candidate_error(
 ) -> list[int]:
     """
     Reconstruct a full candidate error vector from two partial errors.
-
     """
 
     if len(left_positions) != len(left_error):
@@ -187,3 +194,58 @@ def reconstruct_candidate_error(
         candidate_error[position] = value
 
     return candidate_error
+
+
+def stern_decode(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    left_positions: list[int],
+    right_positions: list[int],
+    left_weight: int,
+    right_weight: int,
+) -> list[int] | None:
+    """
+    Decode a syndrome using a simplified educational Stern procedure.
+
+    """
+
+    if not parity_check_matrix:
+        return None
+
+    left_list = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=left_positions,
+        weight=left_weight,
+    )
+
+    right_list = build_partial_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=right_positions,
+        weight=right_weight,
+    )
+
+    collisions = find_syndrome_collisions(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=syndrome,
+    )
+
+    total_length = len(parity_check_matrix[0])
+
+    for left_error, right_error in collisions:
+        candidate_error = reconstruct_candidate_error(
+            left_positions=left_positions,
+            left_error=left_error,
+            right_positions=right_positions,
+            right_error=right_error,
+            length=total_length,
+        )
+
+        if verify_solution(
+            parity_check_matrix,
+            candidate_error,
+            syndrome,
+        ):
+            return candidate_error
+
+    return None
