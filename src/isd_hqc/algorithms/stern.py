@@ -196,6 +196,53 @@ def reconstruct_candidate_error(
     return candidate_error
 
 
+
+def validate_stern_positions(
+    left_positions: list[int],
+    right_positions: list[int],
+    number_of_columns: int,
+) -> None:
+    """
+    Validate the column positions used by the simplified Stern decoder.
+
+    """
+
+    if number_of_columns < 0:
+        raise ValueError(
+            "Number of columns must be non-negative."
+        )
+
+    if len(set(left_positions)) != len(left_positions):
+        raise ValueError(
+            "Left positions must not contain duplicates."
+        )
+
+    if len(set(right_positions)) != len(right_positions):
+        raise ValueError(
+            "Right positions must not contain duplicates."
+        )
+
+    if set(left_positions) & set(right_positions):
+        raise ValueError(
+            "Left and right positions must be disjoint."
+        )
+
+    for position in left_positions:
+        if position < 0 or position >= number_of_columns:
+            raise IndexError(
+                "Left position is outside the matrix column range."
+            )
+
+    for position in right_positions:
+        if position < 0 or position >= number_of_columns:
+            raise IndexError(
+                "Right position is outside the matrix column range."
+            )
+
+
+
+
+        
 def stern_decode(
     parity_check_matrix: list[list[int]],
     syndrome: list[int],
@@ -206,11 +253,18 @@ def stern_decode(
 ) -> list[int] | None:
     """
     Decode a syndrome using a simplified educational Stern procedure.
-
     """
 
     if not parity_check_matrix:
         return None
+
+    total_length = len(parity_check_matrix[0])
+
+    validate_stern_positions(
+        left_positions=left_positions,
+        right_positions=right_positions,
+        number_of_columns=total_length,
+    )
 
     left_list = build_partial_syndrome_list(
         parity_check_matrix=parity_check_matrix,
@@ -229,8 +283,6 @@ def stern_decode(
         right_list=right_list,
         target_syndrome=syndrome,
     )
-
-    total_length = len(parity_check_matrix[0])
 
     for left_error, right_error in collisions:
         candidate_error = reconstruct_candidate_error(

@@ -7,6 +7,7 @@ from isd_hqc.algorithms.stern import (
     find_syndrome_collisions,
     reconstruct_candidate_error,
     stern_decode,
+    validate_stern_positions,
 )
 from isd_hqc.syndrome import verify_solution
 
