@@ -4,6 +4,7 @@ Implementation of the Stern ISD algorithm.
 from itertools import combinations
 from isd_hqc.linear_algebra import gf2_matrix_vector_mul
 from isd_hqc.syndrome import verify_solution
+import random
 
 def generate_weight_vectors(
     length: int,
@@ -301,3 +302,38 @@ def stern_decode(
             return candidate_error
 
     return None
+
+
+def select_stern_partition(
+    positions: list[int],
+    seed: int | None = None,
+) -> tuple[list[int], list[int]]:
+    """
+    Randomly split positions into left and right halves.
+    
+    """
+
+    if len(positions) < 2:
+        raise ValueError(
+            "At least two positions are required."
+        )
+
+    rng = random.Random(seed)
+
+    shuffled_positions = positions.copy()
+    rng.shuffle(shuffled_positions)
+
+    middle = len(shuffled_positions) // 2
+
+    left_positions = sorted(
+        shuffled_positions[:middle]
+    )
+
+    right_positions = sorted(
+        shuffled_positions[middle:]
+    )
+
+    return (
+        left_positions,
+        right_positions,
+    )

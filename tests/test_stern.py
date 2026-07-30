@@ -8,6 +8,7 @@ from isd_hqc.algorithms.stern import (
     reconstruct_candidate_error,
     stern_decode,
     validate_stern_positions,
+    select_stern_partition,
 )
 from isd_hqc.syndrome import verify_solution
 
@@ -473,3 +474,101 @@ def test_stern_decode_returns_complete_valid_error_vector():
         result,
         syndrome,
     )
+
+
+
+def test_validate_stern_positions_accepts_valid_partition():
+    validate_stern_positions(
+        left_positions=[0, 2],
+        right_positions=[1, 3],
+        number_of_columns=4,
+    )
+
+
+def test_validate_stern_positions_rejects_duplicate_left_positions():
+    with pytest.raises(
+        ValueError,
+        match="Left positions must not contain duplicates.",
+    ):
+        validate_stern_positions(
+            left_positions=[0, 0],
+            right_positions=[1, 2],
+            number_of_columns=4,
+        )
+
+
+def test_validate_stern_positions_rejects_overlapping_positions():
+    with pytest.raises(
+        ValueError,
+        match="Left and right positions must be disjoint.",
+    ):
+        validate_stern_positions(
+            left_positions=[0, 1],
+            right_positions=[1, 2],
+            number_of_columns=4,
+        )
+
+
+def test_validate_stern_positions_rejects_out_of_range_position():
+    with pytest.raises(
+        IndexError,
+        match="Right position is outside the matrix column range.",
+    ):
+        validate_stern_positions(
+            left_positions=[0, 1],
+            right_positions=[2, 4],
+            number_of_columns=4,
+        )
+
+
+
+def test_select_stern_partition_even_number_of_positions():
+    left_positions, right_positions = select_stern_partition(
+        positions=[0, 1, 2, 3],
+        seed=42,
+    )
+
+    assert len(left_positions) == 2
+    assert len(right_positions) == 2
+
+    assert sorted(
+        left_positions + right_positions
+    ) == [0, 1, 2, 3]
+
+
+def test_select_stern_partition_odd_number_of_positions():
+    left_positions, right_positions = select_stern_partition(
+        positions=[0, 1, 2, 3, 4],
+        seed=42,
+    )
+
+    assert len(left_positions) == 2
+    assert len(right_positions) == 3
+
+    assert sorted(
+        left_positions + right_positions
+    ) == [0, 1, 2, 3, 4]
+
+
+def test_select_stern_partition_rejects_small_input():
+    with pytest.raises(
+        ValueError,
+        match="At least two positions are required.",
+    ):
+        select_stern_partition(
+            positions=[0]
+        )
+
+
+def test_select_stern_partition_is_reproducible():
+    first = select_stern_partition(
+        positions=[0, 1, 2, 3, 4, 5],
+        seed=123,
+    )
+
+    second = select_stern_partition(
+        positions=[0, 1, 2, 3, 4, 5],
+        seed=123,
+    )
+
+    assert first == second
