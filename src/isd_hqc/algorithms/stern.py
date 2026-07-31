@@ -337,3 +337,38 @@ def select_stern_partition(
         left_positions,
         right_positions,
     )
+
+
+
+def stern_decode_with_random_partition(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    left_weight: int,
+    right_weight: int,
+    seed: int | None = None,
+) -> list[int] | None:
+    """
+    Decode a syndrome using the simplified Stern procedure with an
+    automatically generated random partition of matrix columns.
+
+    """
+
+    if not parity_check_matrix:
+        return None
+
+    number_of_columns = len(parity_check_matrix[0])
+    positions = list(range(number_of_columns))
+
+    left_positions, right_positions = select_stern_partition(
+        positions=positions,
+        seed=seed,
+    )
+
+    return stern_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_positions=left_positions,
+        right_positions=right_positions,
+        left_weight=left_weight,
+        right_weight=right_weight,
+    )

@@ -9,6 +9,7 @@ from isd_hqc.algorithms.stern import (
     stern_decode,
     validate_stern_positions,
     select_stern_partition,
+    stern_decode_with_random_partition,
 )
 from isd_hqc.syndrome import verify_solution
 
@@ -572,3 +573,87 @@ def test_select_stern_partition_is_reproducible():
     )
 
     assert first == second
+
+
+
+def test_stern_decode_with_random_partition_finds_solution():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+    syndrome = [1, 1]
+
+    result = stern_decode_with_random_partition(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_weight=1,
+        right_weight=1,
+        seed=42,
+    )
+
+    assert result == [1, 1]
+
+
+def test_stern_decode_with_random_partition_returns_none():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+    syndrome = [1, 1]
+
+    result = stern_decode_with_random_partition(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_weight=0,
+        right_weight=0,
+        seed=42,
+    )
+
+    assert result is None
+
+
+def test_stern_decode_with_random_partition_is_reproducible():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    syndrome = [1, 1]
+
+    first_result = stern_decode_with_random_partition(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_weight=1,
+        right_weight=1,
+        seed=123,
+    )
+
+    second_result = stern_decode_with_random_partition(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        left_weight=1,
+        right_weight=1,
+        seed=123,
+    )
+
+    assert first_result == second_result
+
+    assert first_result is not None
+
+    assert verify_solution(
+        parity_check_matrix=parity_check_matrix,
+        error=first_result,
+        syndrome=syndrome,
+        weight=2,
+    )
+
+
+def test_stern_decode_with_random_partition_empty_matrix():
+    result = stern_decode_with_random_partition(
+        parity_check_matrix=[],
+        syndrome=[],
+        left_weight=0,
+        right_weight=0,
+        seed=42,
+    )
+
+    assert result is None
