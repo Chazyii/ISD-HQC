@@ -225,3 +225,66 @@ def gf2_solve_linear_system(
         solution.append(augmented_matrix[row][-1])
 
     return solution
+
+
+
+def gf2_inverse_matrix(matrix: Matrix) -> Matrix | None:
+    """
+    Compute the inverse of a square matrix over GF(2).
+    
+    """
+
+    if not matrix:
+        raise ValueError("Matrix must not be empty.")
+
+    number_of_rows = len(matrix)
+    number_of_columns = len(matrix[0])
+
+    if any(len(row) != number_of_columns for row in matrix):
+        raise ValueError("All matrix rows must have the same length.")
+
+    if number_of_rows != number_of_columns:
+        raise ValueError("Matrix must be square.")
+
+    augmented_matrix = []
+
+    identity = identity_matrix(number_of_rows)
+
+    for row_index in range(number_of_rows):
+        augmented_matrix.append(
+            matrix[row_index].copy()
+            + identity[row_index]
+        )
+
+    for column in range(number_of_columns):
+        pivot = None
+
+        for row in range(column, number_of_rows):
+            if augmented_matrix[row][column] == 1:
+                pivot = row
+                break
+
+        if pivot is None:
+            return None
+
+        augmented_matrix[column], augmented_matrix[pivot] = (
+            augmented_matrix[pivot],
+            augmented_matrix[column],
+        )
+
+        for row in range(number_of_rows):
+            if (
+                row != column
+                and augmented_matrix[row][column] == 1
+            ):
+                augmented_matrix[row] = gf2_add_vectors(
+                    augmented_matrix[row],
+                    augmented_matrix[column],
+                )
+
+    inverse_matrix = [
+        row[number_of_columns:]
+        for row in augmented_matrix
+    ]
+
+    return inverse_matrix

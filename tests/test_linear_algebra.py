@@ -10,6 +10,7 @@ from isd_hqc.linear_algebra import (
     gf2_row_echelon_form,
     gf2_rank,
     gf2_solve_linear_system,
+    gf2_inverse_matrix,
 )
 
 
@@ -305,3 +306,148 @@ def test_gf2_solve_linear_system_invalid_vector_length():
 
     with pytest.raises(ValueError):
         gf2_solve_linear_system(matrix, vector)
+
+
+
+#inverse matrix
+def test_gf2_inverse_matrix():
+    matrix = [
+        [1, 1],
+        [1, 0],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse == [
+        [0, 1],
+        [1, 1],
+    ]
+
+
+def test_gf2_inverse_matrix_product_is_identity():
+    matrix = [
+        [1, 1, 0],
+        [0, 1, 1],
+        [1, 1, 1],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse is not None
+
+    product = gf2_matrix_matrix_mul(
+        matrix,
+        inverse,
+    )
+
+    assert product == identity_matrix(3)
+
+
+def test_gf2_inverse_matrix_requires_row_swap():
+    matrix = [
+        [0, 1],
+        [1, 1],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse == [
+        [1, 1],
+        [1, 0],
+    ]
+
+
+def test_gf2_inverse_identity_matrix():
+    matrix = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse == matrix
+
+
+def test_gf2_inverse_single_element_matrix():
+    matrix = [
+        [1],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse == [
+        [1],
+    ]
+
+
+def test_gf2_inverse_singular_matrix():
+    matrix = [
+        [1, 1],
+        [1, 1],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse is None
+
+
+def test_gf2_inverse_zero_matrix():
+    matrix = [
+        [0, 0],
+        [0, 0],
+    ]
+
+    inverse = gf2_inverse_matrix(matrix)
+
+    assert inverse is None
+
+
+def test_gf2_inverse_does_not_modify_original_matrix():
+    matrix = [
+        [1, 1],
+        [1, 0],
+    ]
+
+    original_matrix = [
+        [1, 1],
+        [1, 0],
+    ]
+
+    gf2_inverse_matrix(matrix)
+
+    assert matrix == original_matrix
+
+
+def test_gf2_inverse_empty_matrix():
+    with pytest.raises(
+        ValueError,
+        match="Matrix must not be empty.",
+    ):
+        gf2_inverse_matrix([])
+
+
+def test_gf2_inverse_invalid_matrix():
+    matrix = [
+        [1, 0],
+        [1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="All matrix rows must have the same length.",
+    ):
+        gf2_inverse_matrix(matrix)
+
+
+def test_gf2_inverse_non_square_matrix():
+    matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Matrix must be square.",
+    ):
+        gf2_inverse_matrix(matrix)
