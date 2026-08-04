@@ -10,8 +10,9 @@ from isd_hqc.algorithms.stern import (
     validate_stern_positions,
     select_stern_partition,
     stern_decode_with_random_partition,
+    construct_systematic_form,
 )
-from isd_hqc.syndrome import verify_solution
+from isd_hqc.syndrome import verify_solution, compute_syndrome
 
 def test_generate_weight_vectors():
     vectors = generate_weight_vectors(
@@ -657,3 +658,200 @@ def test_stern_decode_with_random_partition_empty_matrix():
     )
 
     assert result is None
+
+
+
+def test_construct_systematic_form():
+    parity_check_matrix = [
+        [1, 1, 0, 1],
+        [0, 1, 1, 1],
+    ]
+    syndrome = [1, 1]
+
+    result = construct_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        pivot_positions=[0, 1],
+    )
+
+    assert result is not None
+
+    transformed_matrix, transformed_syndrome = result
+
+    assert transformed_matrix == [
+        [1, 0, 1, 0],
+        [0, 1, 1, 1],
+    ]
+
+    assert transformed_syndrome == [0, 1]
+
+
+def test_construct_systematic_form_selected_columns_are_identity():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [1, 1, 0, 1],
+    ]
+    syndrome = [1, 0]
+
+    result = construct_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        pivot_positions=[2, 3],
+    )
+
+    assert result is not None
+
+    transformed_matrix, _ = result
+
+    selected_columns = [
+        [
+            row[2],
+            row[3],
+        ]
+        for row in transformed_matrix
+    ]
+
+    assert selected_columns == [
+        [1, 0],
+        [0, 1],
+    ]
+
+
+def test_construct_systematic_form_preserves_syndrome_equation():
+    parity_check_matrix = [
+        [1, 1, 0, 1],
+        [0, 1, 1, 1],
+    ]
+    error = [1, 0, 1, 0]
+    syndrome = compute_syndrome(
+        parity_check_matrix,
+        error,
+    )
+
+    result = construct_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        pivot_positions=[0, 1],
+    )
+
+    assert result is not None
+
+    transformed_matrix, transformed_syndrome = result
+
+    assert compute_syndrome(
+        transformed_matrix,
+        error,
+    ) == transformed_syndrome
+
+
+def test_construct_systematic_form_returns_none_for_singular_submatrix():
+    parity_check_matrix = [
+        [1, 1, 0],
+        [1, 1, 1],
+    ]
+    syndrome = [0, 1]
+
+    result = construct_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        pivot_positions=[0, 1],
+    )
+
+    assert result is None
+
+
+def test_construct_systematic_form_rejects_empty_matrix():
+    with pytest.raises(
+        ValueError,
+        match="Parity-check matrix must not be empty.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=[],
+            syndrome=[],
+            pivot_positions=[],
+        )
+
+
+def test_construct_systematic_form_rejects_invalid_matrix():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="All parity-check matrix rows must have the same length.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            pivot_positions=[0, 1],
+        )
+
+
+def test_construct_systematic_form_rejects_invalid_syndrome_length():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Syndrome length must match the number of matrix rows.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1],
+            pivot_positions=[0, 1],
+        )
+
+
+def test_construct_systematic_form_rejects_invalid_pivot_count():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Number of pivot positions must match the number of matrix rows.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            pivot_positions=[0],
+        )
+
+
+def test_construct_systematic_form_rejects_duplicate_pivots():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Pivot positions must not contain duplicates.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            pivot_positions=[0, 0],
+        )
+
+
+def test_construct_systematic_form_rejects_out_of_range_pivot():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        IndexError,
+        match="Pivot position is outside the matrix column range.",
+    ):
+        construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            pivot_positions=[0, 3],
+        )

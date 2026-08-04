@@ -2,7 +2,11 @@
 Implementation of the Stern ISD algorithm.
 """
 from itertools import combinations
-from isd_hqc.linear_algebra import gf2_matrix_vector_mul
+from isd_hqc.linear_algebra import (
+    gf2_inverse_matrix,
+    gf2_matrix_matrix_mul,
+    gf2_matrix_vector_mul,
+)
 from isd_hqc.syndrome import verify_solution
 import random
 
@@ -240,6 +244,88 @@ def validate_stern_positions(
                 "Right position is outside the matrix column range."
             )
 
+
+
+
+def construct_systematic_form(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    pivot_positions: list[int],
+) -> tuple[list[list[int]], list[int]] | None:
+    """
+    Transform a parity-check matrix and syndrome into an equivalent
+    systematic form over GF(2).
+
+    """
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_rows = len(parity_check_matrix)
+    number_of_columns = len(parity_check_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in parity_check_matrix
+    ):
+        raise ValueError(
+            "All parity-check matrix rows must have the same length."
+        )
+
+    if len(syndrome) != number_of_rows:
+        raise ValueError(
+            "Syndrome length must match the number of matrix rows."
+        )
+
+    if len(pivot_positions) != number_of_rows:
+        raise ValueError(
+            "Number of pivot positions must match the number of matrix rows."
+        )
+
+    if len(set(pivot_positions)) != len(pivot_positions):
+        raise ValueError(
+            "Pivot positions must not contain duplicates."
+        )
+
+    if any(
+        position < 0 or position >= number_of_columns
+        for position in pivot_positions
+    ):
+        raise IndexError(
+            "Pivot position is outside the matrix column range."
+        )
+
+    pivot_matrix = [
+        [
+            row[position]
+            for position in pivot_positions
+        ]
+        for row in parity_check_matrix
+    ]
+
+    inverse_pivot_matrix = gf2_inverse_matrix(
+        pivot_matrix
+    )
+
+    if inverse_pivot_matrix is None:
+        return None
+
+    transformed_matrix = gf2_matrix_matrix_mul(
+        inverse_pivot_matrix,
+        parity_check_matrix,
+    )
+
+    transformed_syndrome = gf2_matrix_vector_mul(
+        inverse_pivot_matrix,
+        syndrome,
+    )
+
+    return (
+        transformed_matrix,
+        transformed_syndrome,
+    )
 
 
 
