@@ -247,6 +247,42 @@ def validate_stern_positions(
 
 
 
+def select_pivot_positions(
+    number_of_rows: int,
+    number_of_columns: int,
+    rng: random.Random | None = None,
+) -> list[int]:
+    """
+    Randomly select column positions for a square pivot submatrix.
+
+    """
+
+    if number_of_rows <= 0:
+        raise ValueError(
+            "Number of rows must be positive."
+        )
+
+    if number_of_columns <= 0:
+        raise ValueError(
+            "Number of columns must be positive."
+        )
+
+    if number_of_rows > number_of_columns:
+        raise ValueError(
+            "Number of rows must not exceed the number of columns."
+        )
+
+    random_generator = rng if rng is not None else random
+
+    return sorted(
+        random_generator.sample(
+            range(number_of_columns),
+            number_of_rows,
+        )
+    )
+
+
+
 def construct_systematic_form(
     parity_check_matrix: list[list[int]],
     syndrome: list[int],

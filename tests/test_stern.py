@@ -1,4 +1,5 @@
 import pytest
+import random
 
 from isd_hqc.algorithms.stern import (
     build_partial_syndrome_list,
@@ -11,6 +12,7 @@ from isd_hqc.algorithms.stern import (
     select_stern_partition,
     stern_decode_with_random_partition,
     construct_systematic_form,
+    select_pivot_positions,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -854,4 +856,117 @@ def test_construct_systematic_form_rejects_out_of_range_pivot():
             parity_check_matrix=parity_check_matrix,
             syndrome=[1, 0],
             pivot_positions=[0, 3],
+        )
+
+
+def test_select_pivot_positions_has_correct_size():
+    positions = select_pivot_positions(
+        number_of_rows=3,
+        number_of_columns=7,
+        rng=random.Random(42),
+    )
+
+    assert len(positions) == 3
+
+
+def test_select_pivot_positions_are_unique_and_sorted():
+    positions = select_pivot_positions(
+        number_of_rows=4,
+        number_of_columns=8,
+        rng=random.Random(42),
+    )
+
+    assert len(positions) == len(set(positions))
+    assert positions == sorted(positions)
+
+
+def test_select_pivot_positions_are_within_matrix_range():
+    number_of_columns = 8
+
+    positions = select_pivot_positions(
+        number_of_rows=4,
+        number_of_columns=number_of_columns,
+        rng=random.Random(42),
+    )
+
+    assert all(
+        0 <= position < number_of_columns
+        for position in positions
+    )
+
+
+def test_select_pivot_positions_can_select_all_columns():
+    positions = select_pivot_positions(
+        number_of_rows=4,
+        number_of_columns=4,
+        rng=random.Random(42),
+    )
+
+    assert positions == [0, 1, 2, 3]
+
+
+def test_select_pivot_positions_is_reproducible():
+    first_positions = select_pivot_positions(
+        number_of_rows=3,
+        number_of_columns=7,
+        rng=random.Random(123),
+    )
+
+    second_positions = select_pivot_positions(
+        number_of_rows=3,
+        number_of_columns=7,
+        rng=random.Random(123),
+    )
+
+    assert first_positions == second_positions
+
+
+def test_select_pivot_positions_changes_across_generator_calls():
+    rng = random.Random(42)
+
+    first_positions = select_pivot_positions(
+        number_of_rows=3,
+        number_of_columns=10,
+        rng=rng,
+    )
+
+    second_positions = select_pivot_positions(
+        number_of_rows=3,
+        number_of_columns=10,
+        rng=rng,
+    )
+
+    assert first_positions != second_positions
+
+
+def test_select_pivot_positions_rejects_non_positive_rows():
+    with pytest.raises(
+        ValueError,
+        match="Number of rows must be positive.",
+    ):
+        select_pivot_positions(
+            number_of_rows=0,
+            number_of_columns=5,
+        )
+
+
+def test_select_pivot_positions_rejects_non_positive_columns():
+    with pytest.raises(
+        ValueError,
+        match="Number of columns must be positive.",
+    ):
+        select_pivot_positions(
+            number_of_rows=2,
+            number_of_columns=0,
+        )
+
+
+def test_select_pivot_positions_rejects_more_rows_than_columns():
+    with pytest.raises(
+        ValueError,
+        match="Number of rows must not exceed the number of columns.",
+    ):
+        select_pivot_positions(
+            number_of_rows=6,
+            number_of_columns=5,
         )
