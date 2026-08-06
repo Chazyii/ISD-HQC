@@ -365,6 +365,75 @@ def construct_systematic_form(
 
 
 
+def find_systematic_form(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    max_attempts: int,
+    rng: random.Random | None = None,
+) -> tuple[list[list[int]], list[int], list[int]] | None:
+    """
+    Find an invertible pivot submatrix and construct systematic form.
+
+    """
+
+    if max_attempts <= 0:
+        raise ValueError(
+            "Maximum number of attempts must be positive."
+        )
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_rows = len(parity_check_matrix)
+    number_of_columns = len(parity_check_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in parity_check_matrix
+    ):
+        raise ValueError(
+            "All parity-check matrix rows must have the same length."
+        )
+
+    if len(syndrome) != number_of_rows:
+        raise ValueError(
+            "Syndrome length must match the number of matrix rows."
+        )
+
+    random_generator = (
+        rng
+        if rng is not None
+        else random
+    )
+
+    for _ in range(max_attempts):
+        pivot_positions = select_pivot_positions(
+            number_of_rows=number_of_rows,
+            number_of_columns=number_of_columns,
+            rng=random_generator,
+        )
+
+        systematic_form = construct_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=syndrome,
+            pivot_positions=pivot_positions,
+        )
+
+        if systematic_form is None:
+            continue
+
+        transformed_matrix, transformed_syndrome = systematic_form
+
+        return (
+            transformed_matrix,
+            transformed_syndrome,
+            pivot_positions,
+        )
+
+    return None
+
         
 def stern_decode(
     parity_check_matrix: list[list[int]],

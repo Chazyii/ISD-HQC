@@ -13,6 +13,8 @@ from isd_hqc.algorithms.stern import (
     stern_decode_with_random_partition,
     construct_systematic_form,
     select_pivot_positions,
+    construct_systematic_form,
+    find_systematic_form,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -969,4 +971,183 @@ def test_select_pivot_positions_rejects_more_rows_than_columns():
         select_pivot_positions(
             number_of_rows=6,
             number_of_columns=5,
+        )
+
+
+
+def test_find_systematic_form_returns_valid_result():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    syndrome = [1, 0]
+
+    result = find_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        max_attempts=10,
+        rng=random.Random(42),
+    )
+
+    assert result is not None
+
+    transformed_matrix, transformed_syndrome, pivot_positions = result
+
+    assert len(transformed_matrix) == 2
+    assert all(len(row) == 4 for row in transformed_matrix)
+    assert len(transformed_syndrome) == 2
+    assert len(pivot_positions) == 2
+
+    selected_columns = [
+        [
+            row[position]
+            for position in pivot_positions
+        ]
+        for row in transformed_matrix
+    ]
+
+    assert selected_columns == [
+        [1, 0],
+        [0, 1],
+    ]
+
+
+def test_find_systematic_form_retries_after_singular_selection(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 1, 0],
+        [1, 1, 1],
+    ]
+    syndrome = [0, 1]
+
+    selected_positions = [
+        [0, 1],
+        [0, 2],
+    ]
+
+    def controlled_select_pivot_positions(
+        number_of_rows,
+        number_of_columns,
+        rng,
+    ):
+        return selected_positions.pop(0)
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.select_pivot_positions",
+        controlled_select_pivot_positions,
+    )
+
+    result = find_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        max_attempts=2,
+        rng=random.Random(42),
+    )
+
+    assert result is not None
+
+    transformed_matrix, transformed_syndrome, pivot_positions = result
+
+    assert pivot_positions == [0, 2]
+
+    assert transformed_matrix == [
+        [1, 0, 0],
+        [0, 0, 1],
+    ]
+
+    assert transformed_syndrome == [1, 1]
+
+
+def test_find_systematic_form_returns_none_after_all_attempts(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 1, 0],
+        [1, 1, 1],
+    ]
+    syndrome = [0, 1]
+
+    def singular_pivot_selection(
+        number_of_rows,
+        number_of_columns,
+        rng,
+    ):
+        return [0, 1]
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.select_pivot_positions",
+        singular_pivot_selection,
+    )
+
+    result = find_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        max_attempts=3,
+        rng=random.Random(42),
+    )
+
+    assert result is None
+
+
+def test_find_systematic_form_rejects_non_positive_attempt_count():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Maximum number of attempts must be positive.",
+    ):
+        find_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            max_attempts=0,
+        )
+
+
+def test_find_systematic_form_rejects_empty_matrix():
+    with pytest.raises(
+        ValueError,
+        match="Parity-check matrix must not be empty.",
+    ):
+        find_systematic_form(
+            parity_check_matrix=[],
+            syndrome=[],
+            max_attempts=10,
+        )
+
+
+def test_find_systematic_form_rejects_invalid_matrix():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="All parity-check matrix rows must have the same length.",
+    ):
+        find_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            max_attempts=10,
+        )
+
+
+def test_find_systematic_form_rejects_invalid_syndrome_length():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Syndrome length must match the number of matrix rows.",
+    ):
+        find_systematic_form(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1],
+            max_attempts=10,
         )
