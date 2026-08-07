@@ -563,3 +563,71 @@ def stern_decode_with_random_partition(
         left_weight=left_weight,
         right_weight=right_weight,
     )
+
+
+
+def build_stern_information_partition(
+    number_of_columns: int,
+    pivot_positions: list[int],
+    rng: random.Random | None = None,
+) -> tuple[list[int], list[int], list[int]]:
+    """
+    Construct and randomly split the information-set positions for Stern.
+
+    """
+
+    if number_of_columns <= 0:
+        raise ValueError(
+            "Number of columns must be positive."
+        )
+
+    if len(set(pivot_positions)) != len(pivot_positions):
+        raise ValueError(
+            "Pivot positions must not contain duplicates."
+        )
+
+    if any(
+        position < 0 or position >= number_of_columns
+        for position in pivot_positions
+    ):
+        raise IndexError(
+            "Pivot position is outside the matrix column range."
+        )
+
+    pivot_set = set(pivot_positions)
+
+    information_set = [
+        position
+        for position in range(number_of_columns)
+        if position not in pivot_set
+    ]
+
+    if len(information_set) < 2:
+        raise ValueError(
+            "Information set must contain at least two positions."
+        )
+
+    random_generator = (
+        rng
+        if rng is not None
+        else random
+    )
+
+    shuffled_positions = information_set.copy()
+    random_generator.shuffle(shuffled_positions)
+
+    middle = len(shuffled_positions) // 2
+
+    left_positions = sorted(
+        shuffled_positions[:middle]
+    )
+
+    right_positions = sorted(
+        shuffled_positions[middle:]
+    )
+
+    return (
+        information_set,
+        left_positions,
+        right_positions,
+    )

@@ -15,6 +15,7 @@ from isd_hqc.algorithms.stern import (
     select_pivot_positions,
     construct_systematic_form,
     find_systematic_form,
+    build_stern_information_partition
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1150,4 +1151,113 @@ def test_find_systematic_form_rejects_invalid_syndrome_length():
             parity_check_matrix=parity_check_matrix,
             syndrome=[1],
             max_attempts=10,
+        )
+
+
+
+
+def test_build_stern_information_partition_constructs_complement():
+    information_set, left_positions, right_positions = (
+        build_stern_information_partition(
+            number_of_columns=7,
+            pivot_positions=[1, 4, 6],
+            rng=random.Random(42),
+        )
+    )
+
+    assert information_set == [0, 2, 3, 5]
+
+    assert sorted(
+        left_positions + right_positions
+    ) == information_set
+
+
+def test_build_stern_information_partition_is_disjoint_from_pivots():
+    pivot_positions = [0, 3]
+
+    information_set, left_positions, right_positions = (
+        build_stern_information_partition(
+            number_of_columns=6,
+            pivot_positions=pivot_positions,
+            rng=random.Random(42),
+        )
+    )
+
+    assert set(information_set).isdisjoint(
+        pivot_positions
+    )
+
+    assert set(left_positions).isdisjoint(
+        pivot_positions
+    )
+
+    assert set(right_positions).isdisjoint(
+        pivot_positions
+    )
+
+
+def test_build_stern_information_partition_splits_information_set():
+    information_set, left_positions, right_positions = (
+        build_stern_information_partition(
+            number_of_columns=8,
+            pivot_positions=[0, 1, 2],
+            rng=random.Random(42),
+        )
+    )
+
+    assert len(information_set) == 5
+    assert len(left_positions) == 2
+    assert len(right_positions) == 3
+
+    assert set(left_positions).isdisjoint(
+        right_positions
+    )
+
+
+def test_build_stern_information_partition_is_reproducible():
+    first = build_stern_information_partition(
+        number_of_columns=8,
+        pivot_positions=[0, 1, 2],
+        rng=random.Random(123),
+    )
+
+    second = build_stern_information_partition(
+        number_of_columns=8,
+        pivot_positions=[0, 1, 2],
+        rng=random.Random(123),
+    )
+
+    assert first == second
+
+
+def test_build_stern_information_partition_rejects_duplicate_pivots():
+    with pytest.raises(
+        ValueError,
+        match="Pivot positions must not contain duplicates.",
+    ):
+        build_stern_information_partition(
+            number_of_columns=6,
+            pivot_positions=[0, 0],
+        )
+
+
+def test_build_stern_information_partition_rejects_invalid_pivot():
+    with pytest.raises(
+        IndexError,
+        match="Pivot position is outside the matrix column range.",
+    ):
+        build_stern_information_partition(
+            number_of_columns=5,
+            pivot_positions=[0, 5],
+        )
+
+
+def test_build_stern_information_partition_requires_two_information_positions():
+    with pytest.raises(
+        ValueError,
+        match="Information set must contain at least two positions.",
+    ):
+        build_stern_information_partition(
+            number_of_columns=4,
+            pivot_positions=[0, 1, 2],
         )
