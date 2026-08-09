@@ -15,7 +15,8 @@ from isd_hqc.algorithms.stern import (
     select_pivot_positions,
     construct_systematic_form,
     find_systematic_form,
-    build_stern_information_partition
+    build_stern_information_partition,
+    select_collision_rows,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1260,4 +1261,101 @@ def test_build_stern_information_partition_requires_two_information_positions():
         build_stern_information_partition(
             number_of_columns=4,
             pivot_positions=[0, 1, 2],
+        )
+
+
+
+
+def test_select_collision_rows_has_correct_size():
+    rows = select_collision_rows(
+        number_of_rows=6,
+        ell=3,
+        rng=random.Random(42),
+    )
+
+    assert len(rows) == 3
+
+
+def test_select_collision_rows_are_unique_and_sorted():
+    rows = select_collision_rows(
+        number_of_rows=8,
+        ell=4,
+        rng=random.Random(42),
+    )
+
+    assert len(rows) == len(set(rows))
+    assert rows == sorted(rows)
+
+
+def test_select_collision_rows_are_within_range():
+    number_of_rows = 7
+
+    rows = select_collision_rows(
+        number_of_rows=number_of_rows,
+        ell=3,
+        rng=random.Random(42),
+    )
+
+    assert all(
+        0 <= row < number_of_rows
+        for row in rows
+    )
+
+
+def test_select_collision_rows_can_select_all_rows():
+    rows = select_collision_rows(
+        number_of_rows=4,
+        ell=4,
+        rng=random.Random(42),
+    )
+
+    assert rows == [0, 1, 2, 3]
+
+
+def test_select_collision_rows_is_reproducible():
+    first = select_collision_rows(
+        number_of_rows=8,
+        ell=3,
+        rng=random.Random(123),
+    )
+
+    second = select_collision_rows(
+        number_of_rows=8,
+        ell=3,
+        rng=random.Random(123),
+    )
+
+    assert first == second
+
+
+def test_select_collision_rows_rejects_non_positive_ell():
+    with pytest.raises(
+        ValueError,
+        match="Collision parameter ell must be positive.",
+    ):
+        select_collision_rows(
+            number_of_rows=5,
+            ell=0,
+        )
+
+
+def test_select_collision_rows_rejects_ell_greater_than_rows():
+    with pytest.raises(
+        ValueError,
+        match="Collision parameter ell must not exceed the number of rows.",
+    ):
+        select_collision_rows(
+            number_of_rows=4,
+            ell=5,
+        )
+
+
+def test_select_collision_rows_rejects_non_positive_row_count():
+    with pytest.raises(
+        ValueError,
+        match="Number of rows must be positive.",
+    ):
+        select_collision_rows(
+            number_of_rows=0,
+            ell=1,
         )

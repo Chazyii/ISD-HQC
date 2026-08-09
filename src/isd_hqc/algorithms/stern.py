@@ -631,3 +631,43 @@ def build_stern_information_partition(
         left_positions,
         right_positions,
     )
+
+
+
+def select_collision_rows(
+    number_of_rows: int,
+    ell: int,
+    rng: random.Random | None = None,
+) -> list[int]:
+    """
+    Randomly select syndrome rows used for Stern collision matching.
+   
+    """
+
+    if number_of_rows <= 0:
+        raise ValueError(
+            "Number of rows must be positive."
+        )
+
+    if ell <= 0:
+        raise ValueError(
+            "Collision parameter ell must be positive."
+        )
+
+    if ell > number_of_rows:
+        raise ValueError(
+            "Collision parameter ell must not exceed the number of rows."
+        )
+
+    random_generator = (
+        rng
+        if rng is not None
+        else random
+    )
+
+    return sorted(
+        random_generator.sample(
+            range(number_of_rows),
+            ell,
+        )
+    )
