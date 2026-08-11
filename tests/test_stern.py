@@ -17,6 +17,7 @@ from isd_hqc.algorithms.stern import (
     find_systematic_form,
     build_stern_information_partition,
     select_collision_rows,
+    project_syndrome,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1358,4 +1359,80 @@ def test_select_collision_rows_rejects_non_positive_row_count():
         select_collision_rows(
             number_of_rows=0,
             ell=1,
+        )
+
+
+
+
+
+def test_project_syndrome():
+    syndrome = [1, 0, 1, 1, 0]
+
+    result = project_syndrome(
+        syndrome=syndrome,
+        collision_rows=[1, 3],
+    )
+
+    assert result == [0, 1]
+
+
+def test_project_syndrome_preserves_requested_order():
+    syndrome = [1, 0, 1, 1]
+
+    result = project_syndrome(
+        syndrome=syndrome,
+        collision_rows=[3, 0, 2],
+    )
+
+    assert result == [1, 1, 1]
+
+
+def test_project_syndrome_single_row():
+    result = project_syndrome(
+        syndrome=[0, 1, 0],
+        collision_rows=[1],
+    )
+
+    assert result == [1]
+
+
+def test_project_syndrome_empty_selection():
+    result = project_syndrome(
+        syndrome=[1, 0, 1],
+        collision_rows=[],
+    )
+
+    assert result == []
+
+
+def test_project_syndrome_rejects_duplicate_rows():
+    with pytest.raises(
+        ValueError,
+        match="Collision rows must not contain duplicates.",
+    ):
+        project_syndrome(
+            syndrome=[1, 0, 1],
+            collision_rows=[0, 0],
+        )
+
+
+def test_project_syndrome_rejects_out_of_range_row():
+    with pytest.raises(
+        IndexError,
+        match="Collision row is outside the syndrome range.",
+    ):
+        project_syndrome(
+            syndrome=[1, 0, 1],
+            collision_rows=[3],
+        )
+
+
+def test_project_syndrome_rejects_negative_row():
+    with pytest.raises(
+        IndexError,
+        match="Collision row is outside the syndrome range.",
+    ):
+        project_syndrome(
+            syndrome=[1, 0, 1],
+            collision_rows=[-1],
         )

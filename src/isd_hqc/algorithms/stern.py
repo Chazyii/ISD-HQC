@@ -671,3 +671,34 @@ def select_collision_rows(
             ell,
         )
     )
+
+
+
+
+
+def project_syndrome(
+    syndrome: list[int],
+    collision_rows: list[int],
+) -> list[int]:
+    """
+    Project a syndrome onto the rows selected for Stern collision matching.
+
+    """
+
+    if len(set(collision_rows)) != len(collision_rows):
+        raise ValueError(
+            "Collision rows must not contain duplicates."
+        )
+
+    if any(
+        row < 0 or row >= len(syndrome)
+        for row in collision_rows
+    ):
+        raise IndexError(
+            "Collision row is outside the syndrome range."
+        )
+
+    return [
+        syndrome[row]
+        for row in collision_rows
+    ]
