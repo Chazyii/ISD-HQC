@@ -702,3 +702,47 @@ def project_syndrome(
         syndrome[row]
         for row in collision_rows
     ]
+
+
+
+
+def build_stern_collision_list(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    weight: int,
+    collision_rows: list[int],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Build a Stern collision list for fixed-weight partial errors.
+    
+    """
+
+    partial_errors = generate_weight_vectors(
+        length=len(positions),
+        weight=weight,
+    )
+
+    collision_list: list[
+        tuple[list[int], list[int]]
+    ] = []
+
+    for partial_error in partial_errors:
+        partial_syndrome = compute_partial_syndrome(
+            parity_check_matrix=parity_check_matrix,
+            positions=positions,
+            partial_error=partial_error,
+        )
+
+        projected_syndrome = project_syndrome(
+            syndrome=partial_syndrome,
+            collision_rows=collision_rows,
+        )
+
+        collision_list.append(
+            (
+                projected_syndrome,
+                partial_error,
+            )
+        )
+
+    return collision_list

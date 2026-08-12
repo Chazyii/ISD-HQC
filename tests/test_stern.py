@@ -18,6 +18,7 @@ from isd_hqc.algorithms.stern import (
     build_stern_information_partition,
     select_collision_rows,
     project_syndrome,
+    build_stern_collision_list,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1436,3 +1437,80 @@ def test_project_syndrome_rejects_negative_row():
             syndrome=[1, 0, 1],
             collision_rows=[-1],
         )
+
+
+
+
+def test_build_stern_collision_list():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+        [1, 1, 0],
+    ]
+
+    result = build_stern_collision_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2],
+        weight=1,
+        collision_rows=[0, 2],
+    )
+
+    assert result == [
+        ([1, 1], [1, 0, 0]),
+        ([0, 1], [0, 1, 0]),
+        ([1, 0], [0, 0, 1]),
+    ]
+
+
+def test_build_stern_collision_list_has_correct_candidate_count():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+        [1, 1, 0, 1],
+    ]
+
+    result = build_stern_collision_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        weight=2,
+        collision_rows=[0, 1],
+    )
+
+    assert len(result) == 6
+
+
+def test_build_stern_collision_list_preserves_error_weight():
+    parity_check_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+        [1, 1, 0, 1],
+    ]
+
+    result = build_stern_collision_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        weight=2,
+        collision_rows=[0, 2],
+    )
+
+    for projected_syndrome, partial_error in result:
+        assert len(projected_syndrome) == 2
+        assert sum(partial_error) == 2
+
+
+def test_build_stern_collision_list_zero_weight():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    result = build_stern_collision_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        weight=0,
+        collision_rows=[0],
+    )
+
+    assert result == [
+        ([0], [0, 0]),
+    ]
