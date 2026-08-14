@@ -746,3 +746,50 @@ def build_stern_collision_list(
         )
 
     return collision_list
+
+
+
+
+def find_stern_collisions(
+    left_list: list[tuple[list[int], list[int]]],
+    right_list: list[tuple[list[int], list[int]]],
+    projected_target_syndrome: list[int],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Find Stern collision pairs for a projected target syndrome.
+
+    """
+
+    collisions: list[tuple[list[int], list[int]]] = []
+
+    target_length = len(projected_target_syndrome)
+
+    for left_syndrome, left_error in left_list:
+        if len(left_syndrome) != target_length:
+            raise ValueError(
+                "Left projected syndrome length must match target length."
+            )
+
+        for right_syndrome, right_error in right_list:
+            if len(right_syndrome) != target_length:
+                raise ValueError(
+                    "Right projected syndrome length must match target length."
+                )
+
+            combined_syndrome = [
+                left_bit ^ right_bit
+                for left_bit, right_bit in zip(
+                    left_syndrome,
+                    right_syndrome,
+                )
+            ]
+
+            if combined_syndrome == projected_target_syndrome:
+                collisions.append(
+                    (
+                        left_error,
+                        right_error,
+                    )
+                )
+
+    return collisions

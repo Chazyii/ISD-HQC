@@ -19,6 +19,7 @@ from isd_hqc.algorithms.stern import (
     select_collision_rows,
     project_syndrome,
     build_stern_collision_list,
+    find_stern_collisions,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1514,3 +1515,108 @@ def test_build_stern_collision_list_zero_weight():
     assert result == [
         ([0], [0, 0]),
     ]
+
+
+
+
+def test_find_stern_collisions_finds_matching_pair():
+    left_list = [
+        ([1, 0], [1, 0]),
+        ([0, 1], [0, 1]),
+    ]
+
+    right_list = [
+        ([0, 1], [1, 0]),
+        ([1, 1], [0, 1]),
+    ]
+
+    result = find_stern_collisions(
+        left_list=left_list,
+        right_list=right_list,
+        projected_target_syndrome=[1, 1],
+    )
+
+    assert result == [
+        ([1, 0], [1, 0]),
+    ]
+
+
+def test_find_stern_collisions_can_find_multiple_pairs():
+    left_list = [
+        ([1, 0], [1, 0]),
+        ([0, 1], [0, 1]),
+    ]
+
+    right_list = [
+        ([0, 1], [1, 0]),
+        ([1, 0], [0, 1]),
+    ]
+
+    result = find_stern_collisions(
+        left_list=left_list,
+        right_list=right_list,
+        projected_target_syndrome=[1, 1],
+    )
+
+    assert result == [
+        ([1, 0], [1, 0]),
+        ([0, 1], [0, 1]),
+    ]
+
+
+def test_find_stern_collisions_returns_empty_list():
+    left_list = [
+        ([0, 0], [1, 0]),
+    ]
+
+    right_list = [
+        ([0, 0], [0, 1]),
+    ]
+
+    result = find_stern_collisions(
+        left_list=left_list,
+        right_list=right_list,
+        projected_target_syndrome=[1, 1],
+    )
+
+    assert result == []
+
+
+def test_find_stern_collisions_rejects_invalid_left_syndrome_length():
+    left_list = [
+        ([1], [1, 0]),
+    ]
+
+    right_list = [
+        ([0, 1], [0, 1]),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Left projected syndrome length must match target length.",
+    ):
+        find_stern_collisions(
+            left_list=left_list,
+            right_list=right_list,
+            projected_target_syndrome=[1, 1],
+        )
+
+
+def test_find_stern_collisions_rejects_invalid_right_syndrome_length():
+    left_list = [
+        ([1, 0], [1, 0]),
+    ]
+
+    right_list = [
+        ([1], [0, 1]),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Right projected syndrome length must match target length.",
+    ):
+        find_stern_collisions(
+            left_list=left_list,
+            right_list=right_list,
+            projected_target_syndrome=[1, 1],
+        )
