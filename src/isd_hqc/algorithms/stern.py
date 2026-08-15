@@ -793,3 +793,112 @@ def find_stern_collisions(
                 )
 
     return collisions
+
+
+
+
+def reconstruct_stern_candidate(
+    systematic_matrix: list[list[int]],
+    transformed_syndrome: list[int],
+    pivot_positions: list[int],
+    left_positions: list[int],
+    left_error: list[int],
+    right_positions: list[int],
+    right_error: list[int],
+) -> list[int]:
+    """
+    Reconstruct a complete Stern error candidate.
+
+    """
+
+    if not systematic_matrix:
+        raise ValueError(
+            "Systematic matrix must not be empty."
+        )
+
+    number_of_rows = len(systematic_matrix)
+    number_of_columns = len(systematic_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in systematic_matrix
+    ):
+        raise ValueError(
+            "All systematic matrix rows must have the same length."
+        )
+
+    if len(transformed_syndrome) != number_of_rows:
+        raise ValueError(
+            "Transformed syndrome length must match matrix rows."
+        )
+
+    if len(pivot_positions) != number_of_rows:
+        raise ValueError(
+            "Number of pivot positions must match matrix rows."
+        )
+
+    if len(left_positions) != len(left_error):
+        raise ValueError(
+            "Left positions must match left partial error length."
+        )
+
+    if len(right_positions) != len(right_error):
+        raise ValueError(
+            "Right positions must match right partial error length."
+        )
+
+    all_positions = (
+        pivot_positions
+        + left_positions
+        + right_positions
+    )
+
+    if len(set(all_positions)) != len(all_positions):
+        raise ValueError(
+            "Pivot, left and right positions must be disjoint."
+        )
+
+    if any(
+        position < 0 or position >= number_of_columns
+        for position in all_positions
+    ):
+        raise IndexError(
+            "Error position is outside the matrix column range."
+        )
+
+    information_error = [0] * number_of_columns
+
+    for position, value in zip(
+        left_positions,
+        left_error,
+    ):
+        information_error[position] = value
+
+    for position, value in zip(
+        right_positions,
+        right_error,
+    ):
+        information_error[position] = value
+
+    information_syndrome = gf2_matrix_vector_mul(
+        systematic_matrix,
+        information_error,
+    )
+
+    pivot_error = [
+        syndrome_bit ^ contribution_bit
+        for syndrome_bit, contribution_bit in zip(
+            transformed_syndrome,
+            information_syndrome,
+        )
+    ]
+
+    candidate_error = information_error.copy()
+
+    for position, value in zip(
+        pivot_positions,
+        pivot_error,
+    ):
+        candidate_error[position] = value
+
+    return candidate_error

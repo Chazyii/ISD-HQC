@@ -20,6 +20,7 @@ from isd_hqc.algorithms.stern import (
     project_syndrome,
     build_stern_collision_list,
     find_stern_collisions,
+    reconstruct_stern_candidate,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1619,4 +1620,114 @@ def test_find_stern_collisions_rejects_invalid_right_syndrome_length():
             left_list=left_list,
             right_list=right_list,
             projected_target_syndrome=[1, 1],
+        )
+
+
+
+
+def test_reconstruct_stern_candidate():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    transformed_syndrome = [1, 1]
+
+    result = reconstruct_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        left_error=[1],
+        right_positions=[3],
+        right_error=[0],
+    )
+
+    assert result == [0, 1, 1, 0]
+
+
+def test_reconstruct_stern_candidate_satisfies_syndrome():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    transformed_syndrome = [1, 1]
+
+    result = reconstruct_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        left_error=[1],
+        right_positions=[3],
+        right_error=[0],
+    )
+
+    assert compute_syndrome(
+        systematic_matrix,
+        result,
+    ) == transformed_syndrome
+
+
+def test_reconstruct_stern_candidate_with_two_information_errors():
+    systematic_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+    transformed_syndrome = [0, 1]
+
+    result = reconstruct_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        left_error=[1],
+        right_positions=[3],
+        right_error=[1],
+    )
+
+    assert compute_syndrome(
+        systematic_matrix,
+        result,
+    ) == transformed_syndrome
+
+
+def test_reconstruct_stern_candidate_rejects_overlapping_positions():
+    systematic_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Pivot, left and right positions must be disjoint.",
+    ):
+        reconstruct_stern_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=[1, 0],
+            pivot_positions=[0, 1],
+            left_positions=[1],
+            left_error=[1],
+            right_positions=[2],
+            right_error=[0],
+        )
+
+
+def test_reconstruct_stern_candidate_rejects_invalid_left_length():
+    systematic_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Left positions must match left partial error length.",
+    ):
+        reconstruct_stern_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=[1, 0],
+            pivot_positions=[0, 1],
+            left_positions=[2],
+            left_error=[],
+            right_positions=[],
+            right_error=[],
         )
