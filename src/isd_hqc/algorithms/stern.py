@@ -6,6 +6,7 @@ from isd_hqc.linear_algebra import (
     gf2_inverse_matrix,
     gf2_matrix_matrix_mul,
     gf2_matrix_vector_mul,
+    hamming_weight,
 )
 from isd_hqc.syndrome import verify_solution
 import random
@@ -902,3 +903,62 @@ def reconstruct_stern_candidate(
         candidate_error[position] = value
 
     return candidate_error
+
+
+
+
+
+def find_valid_stern_candidate(
+    systematic_matrix: list[list[int]],
+    transformed_syndrome: list[int],
+    pivot_positions: list[int],
+    left_positions: list[int],
+    right_positions: list[int],
+    collisions: list[tuple[list[int], list[int]]],
+    target_weight: int,
+) -> list[int] | None:
+    """
+    Find a valid Stern error candidate among collision pairs.
+
+    """
+
+    if not systematic_matrix:
+        raise ValueError(
+            "Systematic matrix must not be empty."
+        )
+
+    number_of_columns = len(systematic_matrix[0])
+
+    if target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
+
+    if target_weight > number_of_columns:
+        raise ValueError(
+            "Target weight must not exceed the code length."
+        )
+
+    for left_error, right_error in collisions:
+        candidate_error = reconstruct_stern_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=transformed_syndrome,
+            pivot_positions=pivot_positions,
+            left_positions=left_positions,
+            left_error=left_error,
+            right_positions=right_positions,
+            right_error=right_error,
+        )
+
+        if hamming_weight(candidate_error) != target_weight:
+            continue
+
+        if verify_solution(
+            parity_check_matrix=systematic_matrix,
+            error=candidate_error,
+            syndrome=transformed_syndrome,
+            weight=target_weight,
+        ):
+            return candidate_error
+
+    return None

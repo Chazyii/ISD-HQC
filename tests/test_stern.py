@@ -21,6 +21,7 @@ from isd_hqc.algorithms.stern import (
     build_stern_collision_list,
     find_stern_collisions,
     reconstruct_stern_candidate,
+    find_valid_stern_candidate,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1730,4 +1731,161 @@ def test_reconstruct_stern_candidate_rejects_invalid_left_length():
             left_error=[],
             right_positions=[],
             right_error=[],
+        )
+
+
+
+
+
+
+def test_find_valid_stern_candidate_finds_candidate():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    transformed_syndrome = [1, 1]
+
+    collisions = [
+        (
+            [1],
+            [0],
+        ),
+    ]
+
+    result = find_valid_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        right_positions=[3],
+        collisions=collisions,
+        target_weight=2,
+    )
+
+    assert result == [0, 1, 1, 0]
+
+
+def test_find_valid_stern_candidate_skips_wrong_weight():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    transformed_syndrome = [1, 1]
+
+    collisions = [
+        (
+            [1],
+            [0],
+        ),
+    ]
+
+    result = find_valid_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        right_positions=[3],
+        collisions=collisions,
+        target_weight=1,
+    )
+
+    assert result is None
+
+
+def test_find_valid_stern_candidate_checks_multiple_collisions():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+    transformed_syndrome = [1, 1]
+
+    collisions = [
+        (
+            [0],
+            [0],
+        ),
+        (
+            [1],
+            [0],
+        ),
+    ]
+
+    result = find_valid_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        right_positions=[3],
+        collisions=collisions,
+        target_weight=2,
+    )
+
+    assert result is not None
+    assert sum(result) == 2
+
+    assert verify_solution(
+        parity_check_matrix=systematic_matrix,
+        error=result,
+        syndrome=transformed_syndrome,
+        weight=2,
+    )
+
+def test_find_valid_stern_candidate_returns_none_for_empty_collisions():
+    systematic_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    result = find_valid_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=[1, 0],
+        pivot_positions=[0, 1],
+        left_positions=[2],
+        right_positions=[],
+        collisions=[],
+        target_weight=1,
+    )
+
+    assert result is None
+
+
+def test_find_valid_stern_candidate_rejects_negative_weight():
+    systematic_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        find_valid_stern_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0, 1],
+            left_positions=[],
+            right_positions=[],
+            collisions=[],
+            target_weight=-1,
+        )
+
+
+def test_find_valid_stern_candidate_rejects_weight_above_code_length():
+    systematic_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not exceed the code length.",
+    ):
+        find_valid_stern_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0, 1],
+            left_positions=[],
+            right_positions=[],
+            collisions=[],
+            target_weight=3,
         )
