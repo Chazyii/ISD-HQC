@@ -962,3 +962,117 @@ def find_valid_stern_candidate(
             return candidate_error
 
     return None
+
+
+
+
+
+def stern_iteration(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    target_weight: int,
+    p: int,
+    ell: int,
+    max_systematic_attempts: int,
+    rng: random.Random | None = None,
+) -> list[int] | None:
+    """
+    Perform one complete classical Stern decoding iteration.
+
+    The iteration:
+
+    1. Finds a systematic form of the parity-check matrix.
+    2. Constructs and splits the information set.
+    3. Selects ell syndrome rows for collision matching.
+    4. Builds left and right fixed-weight-p collision lists.
+    5. Finds projected syndrome collisions.
+    6. Reconstructs complete error candidates.
+    7. Returns a valid candidate of the required total weight.
+
+    """
+
+    if p < 0:
+        raise ValueError(
+            "Stern parameter p must not be negative."
+        )
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_rows = len(parity_check_matrix)
+    number_of_columns = len(parity_check_matrix[0])
+
+    systematic_result = find_systematic_form(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        max_attempts=max_systematic_attempts,
+        rng=rng,
+    )
+
+    if systematic_result is None:
+        return None
+
+    (
+        systematic_matrix,
+        transformed_syndrome,
+        pivot_positions,
+    ) = systematic_result
+
+    (
+        _,
+        left_positions,
+        right_positions,
+    ) = build_stern_information_partition(
+        number_of_columns=number_of_columns,
+        pivot_positions=pivot_positions,
+        rng=rng,
+    )
+
+    if p > len(left_positions):
+        return None
+
+    if p > len(right_positions):
+        return None
+
+    collision_rows = select_collision_rows(
+        number_of_rows=number_of_rows,
+        ell=ell,
+        rng=rng,
+    )
+
+    left_list = build_stern_collision_list(
+        parity_check_matrix=systematic_matrix,
+        positions=left_positions,
+        weight=p,
+        collision_rows=collision_rows,
+    )
+
+    right_list = build_stern_collision_list(
+        parity_check_matrix=systematic_matrix,
+        positions=right_positions,
+        weight=p,
+        collision_rows=collision_rows,
+    )
+
+    projected_target_syndrome = project_syndrome(
+        syndrome=transformed_syndrome,
+        collision_rows=collision_rows,
+    )
+
+    collisions = find_stern_collisions(
+        left_list=left_list,
+        right_list=right_list,
+        projected_target_syndrome=projected_target_syndrome,
+    )
+
+    return find_valid_stern_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=pivot_positions,
+        left_positions=left_positions,
+        right_positions=right_positions,
+        collisions=collisions,
+        target_weight=target_weight,
+    )

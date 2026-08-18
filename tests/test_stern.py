@@ -22,6 +22,7 @@ from isd_hqc.algorithms.stern import (
     find_stern_collisions,
     reconstruct_stern_candidate,
     find_valid_stern_candidate,
+    stern_iteration,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -1889,3 +1890,152 @@ def test_find_valid_stern_candidate_rejects_weight_above_code_length():
             collisions=[],
             target_weight=3,
         )
+
+
+
+
+
+def test_stern_iteration_finds_valid_error(monkeypatch):
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    syndrome = [1, 1]
+
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    transformed_syndrome = [1, 1]
+
+    def fixed_find_systematic_form(
+        parity_check_matrix,
+        syndrome,
+        max_attempts,
+        rng,
+    ):
+        return (
+            systematic_matrix,
+            transformed_syndrome,
+            [0, 1],
+        )
+
+    def fixed_information_partition(
+        number_of_columns,
+        pivot_positions,
+        rng,
+    ):
+        return (
+            [2, 3],
+            [2],
+            [3],
+        )
+
+    def fixed_collision_rows(
+        number_of_rows,
+        ell,
+        rng,
+    ):
+        return [0]
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.find_systematic_form",
+        fixed_find_systematic_form,
+    )
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.build_stern_information_partition",
+        fixed_information_partition,
+    )
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.select_collision_rows",
+        fixed_collision_rows,
+    )
+
+    result = stern_iteration(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        target_weight=2,
+        p=1,
+        ell=1,
+        max_systematic_attempts=10,
+        rng=random.Random(42),
+    )
+
+    assert result is not None
+
+    assert verify_solution(
+        parity_check_matrix=parity_check_matrix,
+        error=result,
+        syndrome=syndrome,
+        weight=2,
+    )
+
+
+def test_stern_iteration_returns_none_when_p_is_too_large():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    result = stern_iteration(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 1],
+        target_weight=2,
+        p=2,
+        ell=1,
+        max_systematic_attempts=10,
+        rng=random.Random(42),
+    )
+
+    assert result is None
+
+
+def test_stern_iteration_rejects_negative_p():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Stern parameter p must not be negative.",
+    ):
+        stern_iteration(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            target_weight=1,
+            p=-1,
+            ell=1,
+            max_systematic_attempts=10,
+            rng=random.Random(42),
+        )
+
+
+def test_stern_iteration_returns_none_when_systematic_form_is_not_found(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.find_systematic_form",
+        lambda **kwargs: None,
+    )
+
+    result = stern_iteration(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 0],
+        target_weight=1,
+        p=0,
+        ell=1,
+        max_systematic_attempts=3,
+        rng=random.Random(42),
+    )
+
+    assert result is None
