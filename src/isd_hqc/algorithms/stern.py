@@ -1076,3 +1076,72 @@ def stern_iteration(
         collisions=collisions,
         target_weight=target_weight,
     )
+
+
+
+
+
+def stern_decode_classical(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    target_weight: int,
+    p: int,
+    ell: int,
+    max_iterations: int,
+    max_systematic_attempts: int,
+    seed: int | None = None,
+) -> list[int] | None:
+    """
+    Decode a syndrome using repeated classical Stern iterations.
+
+    Each iteration performs a new randomized Stern attempt using:
+
+    - a randomly selected systematic form,
+    - a random partition of the information set,
+    - randomly selected collision rows.
+    """
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_columns = len(parity_check_matrix[0])
+
+    if max_iterations <= 0:
+        raise ValueError(
+            "Maximum number of iterations must be positive."
+        )
+
+    if target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
+
+    if target_weight > number_of_columns:
+        raise ValueError(
+            "Target weight must not exceed the code length."
+        )
+
+    if p < 0:
+        raise ValueError(
+            "Stern parameter p must not be negative."
+        )
+
+    rng = random.Random(seed)
+
+    for _ in range(max_iterations):
+        candidate = stern_iteration(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=syndrome,
+            target_weight=target_weight,
+            p=p,
+            ell=ell,
+            max_systematic_attempts=max_systematic_attempts,
+            rng=rng,
+        )
+
+        if candidate is not None:
+            return candidate
+
+    return None

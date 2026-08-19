@@ -23,6 +23,7 @@ from isd_hqc.algorithms.stern import (
     reconstruct_stern_candidate,
     find_valid_stern_candidate,
     stern_iteration,
+    stern_decode_classical,
 )
 from isd_hqc.syndrome import verify_solution, compute_syndrome
 
@@ -2039,3 +2040,182 @@ def test_stern_iteration_returns_none_when_systematic_form_is_not_found(
     )
 
     assert result is None
+
+
+
+
+def test_stern_decode_classical_returns_candidate(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+    syndrome = [1, 0]
+
+    expected_error = [1, 0, 0]
+
+    def successful_iteration(**kwargs):
+        return expected_error
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.stern_iteration",
+        successful_iteration,
+    )
+
+    result = stern_decode_classical(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        target_weight=1,
+        p=0,
+        ell=1,
+        max_iterations=10,
+        max_systematic_attempts=10,
+        seed=42,
+    )
+
+    assert result == expected_error
+
+
+def test_stern_decode_classical_retries_until_success(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    results = [
+        None,
+        None,
+        [1, 0, 0],
+    ]
+
+    def controlled_iteration(**kwargs):
+        return results.pop(0)
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.stern_iteration",
+        controlled_iteration,
+    )
+
+    result = stern_decode_classical(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 0],
+        target_weight=1,
+        p=0,
+        ell=1,
+        max_iterations=5,
+        max_systematic_attempts=10,
+        seed=42,
+    )
+
+    assert result == [1, 0, 0]
+
+
+def test_stern_decode_classical_returns_none_after_iteration_limit(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    def failed_iteration(**kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.stern_iteration",
+        failed_iteration,
+    )
+
+    result = stern_decode_classical(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 0],
+        target_weight=1,
+        p=0,
+        ell=1,
+        max_iterations=3,
+        max_systematic_attempts=10,
+        seed=42,
+    )
+
+    assert result is None
+
+
+def test_stern_decode_classical_respects_iteration_limit(
+    monkeypatch,
+):
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    call_count = 0
+
+    def failed_iteration(**kwargs):
+        nonlocal call_count
+        call_count += 1
+        return None
+
+    monkeypatch.setattr(
+        "isd_hqc.algorithms.stern.stern_iteration",
+        failed_iteration,
+    )
+
+    stern_decode_classical(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 0],
+        target_weight=1,
+        p=0,
+        ell=1,
+        max_iterations=4,
+        max_systematic_attempts=10,
+        seed=42,
+    )
+
+    assert call_count == 4
+
+
+def test_stern_decode_classical_rejects_non_positive_iterations():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Maximum number of iterations must be positive.",
+    ):
+        stern_decode_classical(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            target_weight=1,
+            p=0,
+            ell=1,
+            max_iterations=0,
+            max_systematic_attempts=10,
+            seed=42,
+        )
+
+
+def test_stern_decode_classical_rejects_negative_weight():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        stern_decode_classical(
+            parity_check_matrix=parity_check_matrix,
+            syndrome=[1, 0],
+            target_weight=-1,
+            p=0,
+            ell=1,
+            max_iterations=10,
+            max_systematic_attempts=10,
+            seed=42,
+        )
