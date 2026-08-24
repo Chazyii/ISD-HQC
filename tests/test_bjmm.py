@@ -1,6 +1,7 @@
 import pytest
 
 from isd_hqc.algorithms.bjmm import (
+    build_bjmm_syndrome_list,
     generate_representations,
     is_valid_representation,
 )
@@ -222,4 +223,92 @@ def test_generate_representations_rejects_non_binary_target():
         generate_representations(
             target_vector=[1, 2, 0],
             component_weight=1,
+        )
+
+
+
+
+
+def test_build_bjmm_syndrome_list():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+        [1, 1, 0],
+    ]
+
+    vectors = [
+        [1, 0, 0],
+        [0, 1, 0],
+    ]
+
+    result = build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2],
+        vectors=vectors,
+        merge_rows=[0, 2],
+    )
+
+    assert result == [
+        ([1, 1], [1, 0, 0]),
+        ([0, 1], [0, 1, 0]),
+    ]
+
+
+def test_build_bjmm_syndrome_list_preserves_all_vectors():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    vectors = [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+    ]
+
+    result = build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        vectors=vectors,
+        merge_rows=[0],
+    )
+
+    assert len(result) == 3
+
+    assert [vector for _, vector in result] == vectors
+
+
+def test_build_bjmm_syndrome_list_rejects_invalid_vector_length():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Vector length must match the number of positions.",
+    ):
+        build_bjmm_syndrome_list(
+            parity_check_matrix=parity_check_matrix,
+            positions=[0, 1],
+            vectors=[[1]],
+            merge_rows=[0],
+        )
+
+
+def test_build_bjmm_syndrome_list_rejects_invalid_position():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    with pytest.raises(
+        IndexError,
+        match="Position is outside the matrix column range.",
+    ):
+        build_bjmm_syndrome_list(
+            parity_check_matrix=parity_check_matrix,
+            positions=[0, 2],
+            vectors=[[1, 0]],
+            merge_rows=[0],
         )

@@ -8,6 +8,8 @@ from isd_hqc.linear_algebra import (
 )
 
 from itertools import combinations
+from isd_hqc.algorithms.stern import project_syndrome
+from isd_hqc.linear_algebra import gf2_matrix_vector_mul
 
 def is_valid_representation(
     target_vector: list[int],
@@ -109,3 +111,77 @@ def generate_representations(
         )
 
     return representations
+
+
+
+
+def build_bjmm_syndrome_list(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    vectors: list[list[int]],
+    merge_rows: list[int],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Build a BJMM list containing projected syndrome contributions.
+
+    Each input vector is defined on the selected matrix positions.
+    Its syndrome contribution is computed and projected onto merge_rows.
+
+    """
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_columns = len(parity_check_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in parity_check_matrix
+    ):
+        raise ValueError(
+            "All parity-check matrix rows must have the same length."
+        )
+
+    if any(
+        position < 0 or position >= number_of_columns
+        for position in positions
+    ):
+        raise IndexError(
+            "Position is outside the matrix column range."
+        )
+
+    syndrome_list: list[
+        tuple[list[int], list[int]]
+    ] = []
+
+    partial_matrix = [
+        [row[position] for position in positions]
+        for row in parity_check_matrix
+    ]
+
+    for vector in vectors:
+        if len(vector) != len(positions):
+            raise ValueError(
+                "Vector length must match the number of positions."
+            )
+
+        full_syndrome = gf2_matrix_vector_mul(
+            partial_matrix,
+            vector,
+        )
+
+        projected_syndrome = project_syndrome(
+            syndrome=full_syndrome,
+            collision_rows=merge_rows,
+        )
+
+        syndrome_list.append(
+            (
+                projected_syndrome,
+                vector,
+            )
+        )
+
+    return syndrome_list
