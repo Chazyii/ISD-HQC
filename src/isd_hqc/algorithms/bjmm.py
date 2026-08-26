@@ -185,3 +185,58 @@ def build_bjmm_syndrome_list(
         )
 
     return syndrome_list
+
+
+
+
+
+
+def merge_bjmm_lists(
+    left_list: list[tuple[list[int], list[int]]],
+    right_list: list[tuple[list[int], list[int]]],
+    target_syndrome: list[int],
+) -> list[list[int]]:
+    """
+    Merge two BJMM lists using a projected syndrome condition.
+  
+    """
+
+    merged_vectors: list[list[int]] = []
+
+    target_length = len(target_syndrome)
+
+    for left_syndrome, left_vector in left_list:
+        if len(left_syndrome) != target_length:
+            raise ValueError(
+                "Left projected syndrome length must match target syndrome length."
+            )
+
+        for right_syndrome, right_vector in right_list:
+            if len(right_syndrome) != target_length:
+                raise ValueError(
+                    "Right projected syndrome length must match target syndrome length."
+                )
+
+            if len(left_vector) != len(right_vector):
+                raise ValueError(
+                    "Vectors selected for merging must have the same length."
+                )
+
+            combined_syndrome = gf2_add_vectors(
+                left_syndrome,
+                right_syndrome,
+            )
+
+            if combined_syndrome != target_syndrome:
+                continue
+
+            merged_vector = gf2_add_vectors(
+                left_vector,
+                right_vector,
+            )
+
+            merged_vectors.append(
+                merged_vector
+            )
+
+    return merged_vectors

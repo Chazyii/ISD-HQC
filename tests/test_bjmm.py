@@ -4,8 +4,8 @@ from isd_hqc.algorithms.bjmm import (
     build_bjmm_syndrome_list,
     generate_representations,
     is_valid_representation,
+    merge_bjmm_lists,
 )
-
 
 def test_is_valid_representation():
     target_vector = [
@@ -311,4 +311,170 @@ def test_build_bjmm_syndrome_list_rejects_invalid_position():
             positions=[0, 2],
             vectors=[[1, 0]],
             merge_rows=[0],
+        )
+
+
+
+
+
+def test_merge_bjmm_lists():
+    left_list = [
+        (
+            [1, 0],
+            [1, 0, 1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0, 1],
+            [0, 1, 1, 0],
+        ),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[1, 1],
+    )
+
+    assert result == [
+        [1, 1, 0, 0],
+    ]
+
+
+def test_merge_bjmm_lists_finds_multiple_merges():
+    left_list = [
+        (
+            [1, 0],
+            [1, 0, 1, 0],
+        ),
+        (
+            [0, 1],
+            [0, 1, 0, 1],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0, 1],
+            [0, 1, 1, 0],
+        ),
+        (
+            [1, 0],
+            [1, 0, 0, 1],
+        ),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[1, 1],
+    )
+
+    assert result == [
+        [1, 1, 0, 0],
+        [1, 1, 0, 0],
+    ]
+
+
+def test_merge_bjmm_lists_returns_empty_list_without_match():
+    left_list = [
+        (
+            [1, 0],
+            [1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [1, 0],
+            [0, 1],
+        ),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[1, 1],
+    )
+
+    assert result == []
+
+
+def test_merge_bjmm_lists_rejects_invalid_left_syndrome_length():
+    left_list = [
+        (
+            [1],
+            [1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0, 1],
+            [0, 1],
+        ),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Left projected syndrome length must match target syndrome length.",
+    ):
+        merge_bjmm_lists(
+            left_list=left_list,
+            right_list=right_list,
+            target_syndrome=[1, 1],
+        )
+
+
+def test_merge_bjmm_lists_rejects_invalid_right_syndrome_length():
+    left_list = [
+        (
+            [1, 0],
+            [1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [1],
+            [0, 1],
+        ),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Right projected syndrome length must match target syndrome length.",
+    ):
+        merge_bjmm_lists(
+            left_list=left_list,
+            right_list=right_list,
+            target_syndrome=[1, 1],
+        )
+
+
+def test_merge_bjmm_lists_rejects_different_vector_lengths():
+    left_list = [
+        (
+            [1, 0],
+            [1, 0, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0, 1],
+            [0, 1],
+        ),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Vectors selected for merging must have the same length.",
+    ):
+        merge_bjmm_lists(
+            left_list=left_list,
+            right_list=right_list,
+            target_syndrome=[1, 1],
         )
