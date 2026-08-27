@@ -5,6 +5,7 @@ from isd_hqc.algorithms.bjmm import (
     generate_representations,
     is_valid_representation,
     merge_bjmm_lists,
+    merge_bjmm_level,
 )
 
 def test_is_valid_representation():
@@ -478,3 +479,113 @@ def test_merge_bjmm_lists_rejects_different_vector_lengths():
             right_list=right_list,
             target_syndrome=[1, 1],
         )
+
+
+
+
+
+def test_merge_bjmm_level():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 1, 0],
+        [1, 1, 0, 1],
+    ]
+
+    left_list = [
+        (
+            [1],
+            [1, 0, 1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0],
+            [0, 1, 1, 0],
+        ),
+    ]
+
+    result = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        left_list=left_list,
+        right_list=right_list,
+        merge_target=[1],
+        next_merge_rows=[1, 2],
+    )
+
+    assert result == [
+        (
+            [1, 0],
+            [1, 1, 0, 0],
+        ),
+    ]
+
+
+def test_merge_bjmm_level_returns_empty_list_without_collision():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    left_list = [
+        (
+            [0],
+            [1, 0],
+        ),
+    ]
+
+    right_list = [
+        (
+            [0],
+            [0, 1],
+        ),
+    ]
+
+    result = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        left_list=left_list,
+        right_list=right_list,
+        merge_target=[1],
+        next_merge_rows=[1],
+    )
+
+    assert result == []
+
+
+def test_merge_bjmm_level_preserves_merged_vector():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 1, 0],
+        [1, 1, 0, 1],
+    ]
+
+    result = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        left_list=[
+            (
+                [1],
+                [1, 0, 1, 0],
+            ),
+        ],
+        right_list=[
+            (
+                [0],
+                [0, 1, 1, 0],
+            ),
+        ],
+        merge_target=[1],
+        next_merge_rows=[1],
+    )
+
+    assert len(result) == 1
+
+    projected_syndrome, merged_vector = result[0]
+
+    assert merged_vector == [
+        1, 1, 0, 0,
+    ]
+
+    assert projected_syndrome == [1]

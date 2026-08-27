@@ -240,3 +240,35 @@ def merge_bjmm_lists(
             )
 
     return merged_vectors
+
+
+
+
+def merge_bjmm_level(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    left_list: list[tuple[list[int], list[int]]],
+    right_list: list[tuple[list[int], list[int]]],
+    merge_target: list[int],
+    next_merge_rows: list[int],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Perform one BJMM list-merging level.
+
+    """
+
+    merged_vectors = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=merge_target,
+    )
+
+    if not merged_vectors:
+        return []
+
+    return build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=positions,
+        vectors=merged_vectors,
+        merge_rows=next_merge_rows,
+    )
