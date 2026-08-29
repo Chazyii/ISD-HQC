@@ -6,6 +6,7 @@ from isd_hqc.algorithms.bjmm import (
     is_valid_representation,
     merge_bjmm_lists,
     merge_bjmm_level,
+    merge_bjmm_tree,
 )
 
 def test_is_valid_representation():
@@ -589,3 +590,180 @@ def test_merge_bjmm_level_preserves_merged_vector():
     ]
 
     assert projected_syndrome == [1]
+
+
+
+
+
+def test_merge_bjmm_tree():
+    parity_check_matrix = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
+
+    result = merge_bjmm_tree(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        first_left_list=[
+            (
+                [1],
+                [1, 0, 0, 0],
+            ),
+        ],
+        first_right_list=[
+            (
+                [0],
+                [0, 1, 0, 0],
+            ),
+        ],
+        second_left_list=[
+            (
+                [0],
+                [0, 0, 1, 0],
+            ),
+        ],
+        second_right_list=[
+            (
+                [1],
+                [0, 0, 0, 1],
+            ),
+        ],
+        first_merge_target=[1],
+        second_merge_target=[1],
+        next_merge_rows=[0, 1],
+        final_merge_target=[1, 1],
+    )
+
+    assert result == [
+        [1, 1, 1, 1],
+    ]
+
+
+def test_merge_bjmm_tree_returns_empty_when_first_merge_fails():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    result = merge_bjmm_tree(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        first_left_list=[
+            (
+                [0],
+                [1, 0],
+            ),
+        ],
+        first_right_list=[
+            (
+                [0],
+                [0, 1],
+            ),
+        ],
+        second_left_list=[
+            (
+                [1],
+                [1, 0],
+            ),
+        ],
+        second_right_list=[
+            (
+                [0],
+                [0, 1],
+            ),
+        ],
+        first_merge_target=[1],
+        second_merge_target=[1],
+        next_merge_rows=[0],
+        final_merge_target=[0],
+    )
+
+    assert result == []
+
+
+def test_merge_bjmm_tree_returns_empty_when_second_merge_fails():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    result = merge_bjmm_tree(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        first_left_list=[
+            (
+                [1],
+                [1, 0],
+            ),
+        ],
+        first_right_list=[
+            (
+                [0],
+                [0, 1],
+            ),
+        ],
+        second_left_list=[
+            (
+                [0],
+                [1, 0],
+            ),
+        ],
+        second_right_list=[
+            (
+                [0],
+                [0, 1],
+            ),
+        ],
+        first_merge_target=[1],
+        second_merge_target=[1],
+        next_merge_rows=[0],
+        final_merge_target=[0],
+    )
+
+    assert result == []
+
+
+def test_merge_bjmm_tree_returns_empty_when_final_merge_fails():
+    parity_check_matrix = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
+
+    result = merge_bjmm_tree(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        first_left_list=[
+            (
+                [1],
+                [1, 0, 0, 0],
+            ),
+        ],
+        first_right_list=[
+            (
+                [0],
+                [0, 1, 0, 0],
+            ),
+        ],
+        second_left_list=[
+            (
+                [0],
+                [0, 0, 1, 0],
+            ),
+        ],
+        second_right_list=[
+            (
+                [1],
+                [0, 0, 0, 1],
+            ),
+        ],
+        first_merge_target=[1],
+        second_merge_target=[1],
+        next_merge_rows=[0, 1],
+        final_merge_target=[0, 0],
+    )
+
+    assert result == []

@@ -272,3 +272,54 @@ def merge_bjmm_level(
         vectors=merged_vectors,
         merge_rows=next_merge_rows,
     )
+
+
+
+
+
+def merge_bjmm_tree(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    first_left_list: list[tuple[list[int], list[int]]],
+    first_right_list: list[tuple[list[int], list[int]]],
+    second_left_list: list[tuple[list[int], list[int]]],
+    second_right_list: list[tuple[list[int], list[int]]],
+    first_merge_target: list[int],
+    second_merge_target: list[int],
+    next_merge_rows: list[int],
+    final_merge_target: list[int],
+) -> list[list[int]]:
+    """
+    Perform a two-level BJMM merge tree.
+
+    """
+
+    first_intermediate = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=positions,
+        left_list=first_left_list,
+        right_list=first_right_list,
+        merge_target=first_merge_target,
+        next_merge_rows=next_merge_rows,
+    )
+
+    if not first_intermediate:
+        return []
+
+    second_intermediate = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=positions,
+        left_list=second_left_list,
+        right_list=second_right_list,
+        merge_target=second_merge_target,
+        next_merge_rows=next_merge_rows,
+    )
+
+    if not second_intermediate:
+        return []
+
+    return merge_bjmm_lists(
+        left_list=first_intermediate,
+        right_list=second_intermediate,
+        target_syndrome=final_merge_target,
+    )
