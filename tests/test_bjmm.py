@@ -7,7 +7,9 @@ from isd_hqc.algorithms.bjmm import (
     merge_bjmm_lists,
     merge_bjmm_level,
     merge_bjmm_tree,
+    reconstruct_bjmm_candidate,
 )
+from isd_hqc.syndrome import compute_syndrome
 
 def test_is_valid_representation():
     target_vector = [
@@ -767,3 +769,169 @@ def test_merge_bjmm_tree_returns_empty_when_final_merge_fails():
     )
 
     assert result == []
+
+
+
+
+
+def test_reconstruct_bjmm_candidate():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    transformed_syndrome = [
+        0,
+        1,
+    ]
+
+    result = reconstruct_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_error=[1, 0],
+    )
+
+    assert result == [
+        1, 1, 1, 0,
+    ]
+
+
+def test_reconstruct_bjmm_candidate_satisfies_syndrome():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    transformed_syndrome = [
+        0,
+        1,
+    ]
+
+    candidate = reconstruct_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_error=[1, 0],
+    )
+
+    assert compute_syndrome(
+        systematic_matrix,
+        candidate,
+    ) == transformed_syndrome
+
+
+def test_reconstruct_bjmm_candidate_with_multiple_information_errors():
+    systematic_matrix = [
+        [1, 0, 1, 1],
+        [0, 1, 1, 0],
+    ]
+
+    transformed_syndrome = [
+        1,
+        0,
+    ]
+
+    candidate = reconstruct_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_error=[1, 1],
+    )
+
+    assert candidate == [
+        1, 1, 1, 1,
+    ]
+
+    assert compute_syndrome(
+        systematic_matrix,
+        candidate,
+    ) == transformed_syndrome
+
+
+def test_reconstruct_bjmm_candidate_rejects_information_length_mismatch():
+    with pytest.raises(
+        ValueError,
+        match="Information positions must match information error length.",
+    ):
+        reconstruct_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[2],
+            information_error=[1, 0],
+        )
+
+
+def test_reconstruct_bjmm_candidate_rejects_overlapping_positions():
+    with pytest.raises(
+        ValueError,
+        match="Pivot and information positions must be disjoint.",
+    ):
+        reconstruct_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[1],
+            information_error=[1],
+        )
+
+
+def test_reconstruct_bjmm_candidate_rejects_duplicate_pivots():
+    with pytest.raises(
+        ValueError,
+        match="Pivot positions must not contain duplicates.",
+    ):
+        reconstruct_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 0],
+            information_positions=[2],
+            information_error=[1],
+        )
+
+
+def test_reconstruct_bjmm_candidate_rejects_duplicate_information_positions():
+    with pytest.raises(
+        ValueError,
+        match="Information positions must not contain duplicates.",
+    ):
+        reconstruct_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[2, 2],
+            information_error=[1, 1],
+        )
+
+
+def test_reconstruct_bjmm_candidate_rejects_position_outside_matrix():
+    with pytest.raises(
+        IndexError,
+        match="Error position is outside the matrix column range.",
+    ):
+        reconstruct_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[3],
+            information_error=[1],
+        )
