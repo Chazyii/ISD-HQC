@@ -8,8 +8,12 @@ from isd_hqc.algorithms.bjmm import (
     merge_bjmm_level,
     merge_bjmm_tree,
     reconstruct_bjmm_candidate,
+    find_valid_bjmm_candidate,
 )
-from isd_hqc.syndrome import compute_syndrome
+from isd_hqc.syndrome import (
+    compute_syndrome,
+    verify_solution,
+)
 
 def test_is_valid_representation():
     target_vector = [
@@ -934,4 +938,142 @@ def test_reconstruct_bjmm_candidate_rejects_position_outside_matrix():
             pivot_positions=[0, 1],
             information_positions=[3],
             information_error=[1],
+        )
+
+
+
+
+
+def test_find_valid_bjmm_candidate():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    result = find_valid_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=[0, 1],
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_candidates=[
+            [1, 0],
+        ],
+        target_weight=3,
+    )
+
+    assert result is not None
+
+    assert hamming_weight(result) == 3
+
+    assert verify_solution(
+        parity_check_matrix=systematic_matrix,
+        error=result,
+        syndrome=[0, 1],
+        weight=3,
+    )
+
+
+def test_find_valid_bjmm_candidate_skips_wrong_weight():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    result = find_valid_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=[0, 1],
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_candidates=[
+            [0, 0],
+            [1, 0],
+        ],
+        target_weight=3,
+    )
+
+    assert result is not None
+
+    assert hamming_weight(result) == 3
+
+    assert verify_solution(
+        parity_check_matrix=systematic_matrix,
+        error=result,
+        syndrome=[0, 1],
+        weight=3,
+    )
+
+
+def test_find_valid_bjmm_candidate_returns_none_without_valid_candidate():
+    systematic_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    result = find_valid_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=[0, 1],
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_candidates=[
+            [0, 0],
+        ],
+        target_weight=3,
+    )
+
+    assert result is None
+
+
+def test_find_valid_bjmm_candidate_returns_none_for_empty_candidates():
+    result = find_valid_bjmm_candidate(
+        systematic_matrix=[
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+        ],
+        transformed_syndrome=[0, 1],
+        pivot_positions=[0, 1],
+        information_positions=[2, 3],
+        information_candidates=[],
+        target_weight=3,
+    )
+
+    assert result is None
+
+
+def test_find_valid_bjmm_candidate_rejects_negative_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        find_valid_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[2],
+            information_candidates=[
+                [1],
+            ],
+            target_weight=-1,
+        )
+
+
+def test_find_valid_bjmm_candidate_rejects_excessive_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not exceed the code length.",
+    ):
+        find_valid_bjmm_candidate(
+            systematic_matrix=[
+                [1, 0, 1],
+                [0, 1, 1],
+            ],
+            transformed_syndrome=[0, 1],
+            pivot_positions=[0, 1],
+            information_positions=[2],
+            information_candidates=[
+                [1],
+            ],
+            target_weight=4,
         )

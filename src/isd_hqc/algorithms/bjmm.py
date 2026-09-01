@@ -435,3 +435,63 @@ def reconstruct_bjmm_candidate(
         candidate_error[position] = value
 
     return candidate_error
+
+
+
+
+
+
+def find_valid_bjmm_candidate(
+    systematic_matrix: list[list[int]],
+    transformed_syndrome: list[int],
+    pivot_positions: list[int],
+    information_positions: list[int],
+    information_candidates: list[list[int]],
+    target_weight: int,
+) -> list[int] | None:
+    """
+    Find a valid complete error vector among BJMM information-set candidates.
+
+    Each candidate in information_candidates represents an error vector
+    defined only on information_positions.
+
+    """
+
+    if not systematic_matrix:
+        raise ValueError(
+            "Systematic matrix must not be empty."
+        )
+
+    number_of_columns = len(systematic_matrix[0])
+
+    if target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
+
+    if target_weight > number_of_columns:
+        raise ValueError(
+            "Target weight must not exceed the code length."
+        )
+
+    for information_error in information_candidates:
+        candidate_error = reconstruct_bjmm_candidate(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=transformed_syndrome,
+            pivot_positions=pivot_positions,
+            information_positions=information_positions,
+            information_error=information_error,
+        )
+
+        if hamming_weight(candidate_error) != target_weight:
+            continue
+
+        if verify_solution(
+            parity_check_matrix=systematic_matrix,
+            error=candidate_error,
+            syndrome=transformed_syndrome,
+            weight=target_weight,
+        ):
+            return candidate_error
+
+    return None
