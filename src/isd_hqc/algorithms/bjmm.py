@@ -5,11 +5,12 @@ Implementation of the BJMM ISD algorithm.
 from isd_hqc.linear_algebra import (
     gf2_add_vectors,
     hamming_weight,
+    gf2_matrix_vector_mul,
 )
 
 from itertools import combinations
 from isd_hqc.algorithms.stern import project_syndrome
-from isd_hqc.linear_algebra import gf2_matrix_vector_mul
+from isd_hqc.syndrome import verify_solution
 
 def is_valid_representation(
     target_vector: list[int],
@@ -195,11 +196,19 @@ def merge_bjmm_lists(
     left_list: list[tuple[list[int], list[int]]],
     right_list: list[tuple[list[int], list[int]]],
     target_syndrome: list[int],
+    target_weight: int | None = None,
 ) -> list[list[int]]:
     """
     Merge two BJMM lists using a projected syndrome condition.
-  
+
+    If target_weight is provided, only merged vectors with exactly
+    that Hamming weight are retained.
     """
+
+    if target_weight is not None and target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
 
     merged_vectors: list[list[int]] = []
 
@@ -235,12 +244,17 @@ def merge_bjmm_lists(
                 right_vector,
             )
 
+            if (
+                target_weight is not None
+                and hamming_weight(merged_vector) != target_weight
+            ):
+                continue
+
             merged_vectors.append(
                 merged_vector
             )
 
     return merged_vectors
-
 
 
 
@@ -251,16 +265,19 @@ def merge_bjmm_level(
     right_list: list[tuple[list[int], list[int]]],
     merge_target: list[int],
     next_merge_rows: list[int],
+    merged_weight: int | None = None,
 ) -> list[tuple[list[int], list[int]]]:
     """
     Perform one BJMM list-merging level.
 
+    Optionally retain only merged vectors of a specified Hamming weight.
     """
 
     merged_vectors = merge_bjmm_lists(
         left_list=left_list,
         right_list=right_list,
         target_syndrome=merge_target,
+        target_weight=merged_weight,
     )
 
     if not merged_vectors:
@@ -272,7 +289,6 @@ def merge_bjmm_level(
         vectors=merged_vectors,
         merge_rows=next_merge_rows,
     )
-
 
 
 
