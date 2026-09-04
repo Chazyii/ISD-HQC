@@ -1,6 +1,7 @@
 import pytest
 
 from isd_hqc.algorithms.bjmm import (
+    build_bjmm_base_list,
     build_bjmm_syndrome_list,
     generate_representations,
     is_valid_representation,
@@ -10,10 +11,13 @@ from isd_hqc.algorithms.bjmm import (
     reconstruct_bjmm_candidate,
     find_valid_bjmm_candidate,
 )
+
 from isd_hqc.syndrome import (
     compute_syndrome,
     verify_solution,
 )
+
+from isd_hqc.linear_algebra import hamming_weight
 
 def test_is_valid_representation():
     target_vector = [
@@ -1076,4 +1080,212 @@ def test_find_valid_bjmm_candidate_rejects_excessive_target_weight():
                 [1],
             ],
             target_weight=4,
+        )
+
+
+
+
+
+
+def test_merge_bjmm_lists_filters_by_target_weight():
+    left_list = [
+        ([0], [1, 1, 0, 0]),
+    ]
+
+    right_list = [
+        ([0], [1, 0, 1, 0]),
+        ([0], [0, 0, 1, 1]),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[0],
+        target_weight=2,
+    )
+
+    assert result == [
+        [0, 1, 1, 0],
+    ]
+
+
+def test_merge_bjmm_lists_without_target_weight_keeps_all_matches():
+    left_list = [
+        ([0], [1, 1, 0, 0]),
+    ]
+
+    right_list = [
+        ([0], [1, 0, 1, 0]),
+        ([0], [0, 0, 1, 1]),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[0],
+    )
+
+    assert result == [
+        [0, 1, 1, 0],
+        [1, 1, 1, 1],
+    ]
+
+
+def test_merge_bjmm_lists_returns_empty_when_weight_does_not_match():
+    left_list = [
+        ([0], [1, 1, 0, 0]),
+    ]
+
+    right_list = [
+        ([0], [0, 0, 1, 1]),
+    ]
+
+    result = merge_bjmm_lists(
+        left_list=left_list,
+        right_list=right_list,
+        target_syndrome=[0],
+        target_weight=2,
+    )
+
+    assert result == []
+
+
+def test_merge_bjmm_lists_rejects_negative_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        merge_bjmm_lists(
+            left_list=[],
+            right_list=[],
+            target_syndrome=[0],
+            target_weight=-1,
+        )
+
+
+
+
+def test_merge_bjmm_level_filters_intermediate_weight():
+    parity_check_matrix = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
+
+    positions = [0, 1, 2, 3]
+
+    left_list = [
+        ([0], [1, 1, 0, 0]),
+    ]
+
+    right_list = [
+        ([0], [1, 0, 1, 0]),
+        ([0], [0, 0, 1, 1]),
+    ]
+
+    result = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=positions,
+        left_list=left_list,
+        right_list=right_list,
+        merge_target=[0],
+        next_merge_rows=[1, 2],
+        merged_weight=2,
+    )
+
+    assert result == [
+        ([1, 1], [0, 1, 1, 0]),
+    ]
+
+
+
+
+
+def test_build_bjmm_base_list():
+    parity_check_matrix = [
+        [1, 0, 1],
+        [0, 1, 1],
+    ]
+
+    result = build_bjmm_base_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2],
+        component_weight=1,
+        merge_rows=[0],
+    )
+
+    assert result == [
+        ([1], [1, 0, 0]),
+        ([0], [0, 1, 0]),
+        ([1], [0, 0, 1]),
+    ]
+
+
+def test_build_bjmm_base_list_generates_correct_weight():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    result = build_bjmm_base_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1, 2, 3],
+        component_weight=2,
+        merge_rows=[0],
+    )
+
+    assert len(result) == 6
+
+    for _, vector in result:
+        assert hamming_weight(vector) == 2
+
+
+def test_build_bjmm_base_list_zero_weight():
+    parity_check_matrix = [
+        [1, 0],
+        [0, 1],
+    ]
+
+    result = build_bjmm_base_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=[0, 1],
+        component_weight=0,
+        merge_rows=[0, 1],
+    )
+
+    assert result == [
+        ([0, 0], [0, 0]),
+    ]
+
+
+def test_build_bjmm_base_list_rejects_negative_weight():
+    with pytest.raises(
+        ValueError,
+        match="Component weight must not be negative.",
+    ):
+        build_bjmm_base_list(
+            parity_check_matrix=[
+                [1, 0],
+                [0, 1],
+            ],
+            positions=[0, 1],
+            component_weight=-1,
+            merge_rows=[0],
+        )
+
+
+def test_build_bjmm_base_list_rejects_excessive_weight():
+    with pytest.raises(
+        ValueError,
+        match="Component weight must not exceed the number of positions.",
+    ):
+        build_bjmm_base_list(
+            parity_check_matrix=[
+                [1, 0],
+                [0, 1],
+            ],
+            positions=[0, 1],
+            component_weight=3,
+            merge_rows=[0],
         )

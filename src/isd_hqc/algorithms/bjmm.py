@@ -8,8 +8,14 @@ from isd_hqc.linear_algebra import (
     gf2_matrix_vector_mul,
 )
 
+
+
+from isd_hqc.algorithms.stern import (
+    generate_weight_vectors,
+    project_syndrome,
+)
+
 from itertools import combinations
-from isd_hqc.algorithms.stern import project_syndrome
 from isd_hqc.syndrome import verify_solution
 
 def is_valid_representation(
@@ -116,6 +122,7 @@ def generate_representations(
 
 
 
+
 def build_bjmm_syndrome_list(
     parity_check_matrix: list[list[int]],
     positions: list[int],
@@ -189,6 +196,39 @@ def build_bjmm_syndrome_list(
 
 
 
+
+def build_bjmm_base_list(
+    parity_check_matrix: list[list[int]],
+    positions: list[int],
+    component_weight: int,
+    merge_rows: list[int],
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Build one base list for the BJMM merge tree.
+
+    """
+
+    if component_weight < 0:
+        raise ValueError(
+            "Component weight must not be negative."
+        )
+
+    if component_weight > len(positions):
+        raise ValueError(
+            "Component weight must not exceed the number of positions."
+        )
+
+    vectors = generate_weight_vectors(
+        length=len(positions),
+        weight=component_weight,
+    )
+
+    return build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=positions,
+        vectors=vectors,
+        merge_rows=merge_rows,
+    )
 
 
 
