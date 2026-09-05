@@ -232,6 +232,42 @@ def build_bjmm_base_list(
 
 
 
+
+def split_bjmm_information_positions(
+    information_positions: list[int],
+) -> tuple[list[int], list[int]]:
+    """
+    Split BJMM information positions into two equal halves.
+
+    """
+
+    if not information_positions:
+        raise ValueError(
+            "Information positions must not be empty."
+        )
+
+    if len(set(information_positions)) != len(
+        information_positions
+    ):
+        raise ValueError(
+            "Information positions must not contain duplicates."
+        )
+
+    if len(information_positions) % 2 != 0:
+        raise ValueError(
+            "Number of information positions must be even."
+        )
+
+    middle = len(information_positions) // 2
+
+    first_half = information_positions[:middle]
+    second_half = information_positions[middle:]
+
+    return first_half, second_half
+
+
+
+
 def merge_bjmm_lists(
     left_list: list[tuple[list[int], list[int]]],
     right_list: list[tuple[list[int], list[int]]],

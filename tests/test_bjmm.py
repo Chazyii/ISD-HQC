@@ -10,6 +10,7 @@ from isd_hqc.algorithms.bjmm import (
     merge_bjmm_tree,
     reconstruct_bjmm_candidate,
     find_valid_bjmm_candidate,
+    split_bjmm_information_positions,
 )
 
 from isd_hqc.syndrome import (
@@ -1288,4 +1289,68 @@ def test_build_bjmm_base_list_rejects_excessive_weight():
             positions=[0, 1],
             component_weight=3,
             merge_rows=[0],
+        )
+
+
+
+
+
+
+def test_split_bjmm_information_positions():
+    first_half, second_half = split_bjmm_information_positions(
+        information_positions=[2, 3, 4, 5, 6, 7],
+    )
+
+    assert first_half == [2, 3, 4]
+    assert second_half == [5, 6, 7]
+
+
+def test_split_bjmm_information_positions_preserves_all_positions():
+    information_positions = [
+        4, 7, 2, 9,
+    ]
+
+    first_half, second_half = split_bjmm_information_positions(
+        information_positions=information_positions,
+    )
+
+    assert first_half + second_half == information_positions
+
+
+def test_split_bjmm_information_positions_creates_equal_halves():
+    first_half, second_half = split_bjmm_information_positions(
+        information_positions=[0, 2, 4, 6, 8, 10],
+    )
+
+    assert len(first_half) == 3
+    assert len(second_half) == 3
+
+
+def test_split_bjmm_information_positions_rejects_empty_positions():
+    with pytest.raises(
+        ValueError,
+        match="Information positions must not be empty.",
+    ):
+        split_bjmm_information_positions(
+            information_positions=[],
+        )
+
+
+def test_split_bjmm_information_positions_rejects_duplicates():
+    with pytest.raises(
+        ValueError,
+        match="Information positions must not contain duplicates.",
+    ):
+        split_bjmm_information_positions(
+            information_positions=[2, 3, 3, 4],
+        )
+
+
+def test_split_bjmm_information_positions_rejects_odd_number_of_positions():
+    with pytest.raises(
+        ValueError,
+        match="Number of information positions must be even.",
+    ):
+        split_bjmm_information_positions(
+            information_positions=[2, 3, 4],
         )
