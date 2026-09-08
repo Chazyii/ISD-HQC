@@ -2,6 +2,7 @@ import pytest
 
 from isd_hqc.algorithms.bjmm import (
     build_bjmm_base_list,
+    build_bjmm_base_lists,
     build_bjmm_syndrome_list,
     generate_representations,
     is_valid_representation,
@@ -1353,4 +1354,124 @@ def test_split_bjmm_information_positions_rejects_odd_number_of_positions():
     ):
         split_bjmm_information_positions(
             information_positions=[2, 3, 4],
+        )
+
+
+
+
+
+def test_build_bjmm_base_lists():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3],
+        component_weight=1,
+        merge_rows=[0, 1],
+    )
+
+    expected_first_half_list = [
+        ([1, 0], [1, 0, 0, 0]),
+        ([0, 1], [0, 1, 0, 0]),
+    ]
+
+    expected_second_half_list = [
+        ([1, 0], [0, 0, 1, 0]),
+        ([0, 1], [0, 0, 0, 1]),
+    ]
+
+    assert l1 == expected_first_half_list
+    assert l2 == expected_second_half_list
+    assert l3 == expected_first_half_list
+    assert l4 == expected_second_half_list
+
+
+def test_build_bjmm_base_lists_use_full_information_vector_length():
+    parity_check_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3, 4, 5],
+        component_weight=1,
+        merge_rows=[0],
+    )
+
+    for bjmm_list in [l1, l2, l3, l4]:
+        for _, vector in bjmm_list:
+            assert len(vector) == 6
+
+
+def test_build_bjmm_base_lists_have_correct_component_weight():
+    parity_check_matrix = [
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+    ]
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3, 4, 5],
+        component_weight=2,
+        merge_rows=[0],
+    )
+
+    for bjmm_list in [l1, l2, l3, l4]:
+        for _, vector in bjmm_list:
+            assert hamming_weight(vector) == 2
+
+
+def test_build_bjmm_base_lists_use_correct_halves():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3],
+        component_weight=1,
+        merge_rows=[0],
+    )
+
+    for _, vector in l1 + l3:
+        assert vector[2:] == [0, 0]
+
+    for _, vector in l2 + l4:
+        assert vector[:2] == [0, 0]
+
+
+def test_build_bjmm_base_lists_rejects_negative_component_weight():
+    with pytest.raises(
+        ValueError,
+        match="Component weight must not be negative.",
+    ):
+        build_bjmm_base_lists(
+            parity_check_matrix=[
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+            ],
+            information_positions=[0, 1, 2, 3],
+            component_weight=-1,
+            merge_rows=[0],
+        )
+
+
+def test_build_bjmm_base_lists_rejects_excessive_component_weight():
+    with pytest.raises(
+        ValueError,
+        match="Component weight must not exceed half of the information positions.",
+    ):
+        build_bjmm_base_lists(
+            parity_check_matrix=[
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+            ],
+            information_positions=[0, 1, 2, 3],
+            component_weight=3,
+            merge_rows=[0],
         )

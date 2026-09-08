@@ -233,6 +233,82 @@ def build_bjmm_base_list(
 
 
 
+
+def build_bjmm_base_lists(
+    parity_check_matrix: list[list[int]],
+    information_positions: list[int],
+    component_weight: int,
+    merge_rows: list[int],
+) -> tuple[
+    list[tuple[list[int], list[int]]],
+    list[tuple[list[int], list[int]]],
+    list[tuple[list[int], list[int]]],
+    list[tuple[list[int], list[int]]],
+]:
+    """
+    Build the four base lists used by the educational depth-2 BJMM merge tree.
+
+    L1 and L3 are supported on the first half of the information positions.
+    L2 and L4 are supported on the second half.
+
+    """
+
+    first_half, second_half = split_bjmm_information_positions(
+        information_positions=information_positions,
+    )
+
+    if component_weight < 0:
+        raise ValueError(
+            "Component weight must not be negative."
+        )
+
+    if component_weight > len(first_half):
+        raise ValueError(
+            "Component weight must not exceed half of the information positions."
+        )
+
+    half_length = len(first_half)
+
+    local_vectors = generate_weight_vectors(
+        length=half_length,
+        weight=component_weight,
+    )
+
+    first_half_vectors = [
+        vector + [0] * half_length
+        for vector in local_vectors
+    ]
+
+    second_half_vectors = [
+        [0] * half_length + vector
+        for vector in local_vectors
+    ]
+
+    first_half_list = build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=information_positions,
+        vectors=first_half_vectors,
+        merge_rows=merge_rows,
+    )
+
+    second_half_list = build_bjmm_syndrome_list(
+        parity_check_matrix=parity_check_matrix,
+        positions=information_positions,
+        vectors=second_half_vectors,
+        merge_rows=merge_rows,
+    )
+
+    l1 = first_half_list.copy()
+    l2 = second_half_list.copy()
+    l3 = first_half_list.copy()
+    l4 = second_half_list.copy()
+
+    return l1, l2, l3, l4
+
+
+
+
+
 def split_bjmm_information_positions(
     information_positions: list[int],
 ) -> tuple[list[int], list[int]]:
