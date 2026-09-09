@@ -4,14 +4,15 @@ from isd_hqc.algorithms.bjmm import (
     build_bjmm_base_list,
     build_bjmm_base_lists,
     build_bjmm_syndrome_list,
+    find_valid_bjmm_candidate,
     generate_representations,
     is_valid_representation,
-    merge_bjmm_lists,
     merge_bjmm_level,
+    merge_bjmm_lists,
     merge_bjmm_tree,
     reconstruct_bjmm_candidate,
-    find_valid_bjmm_candidate,
     split_bjmm_information_positions,
+    validate_bjmm_parameters,
 )
 
 from isd_hqc.syndrome import (
@@ -1369,7 +1370,7 @@ def test_build_bjmm_base_lists():
     l1, l2, l3, l4 = build_bjmm_base_lists(
         parity_check_matrix=parity_check_matrix,
         information_positions=[0, 1, 2, 3],
-        component_weight=1,
+        p1=2,
         merge_rows=[0, 1],
     )
 
@@ -1389,6 +1390,24 @@ def test_build_bjmm_base_lists():
     assert l4 == expected_second_half_list
 
 
+def test_build_bjmm_base_lists_have_weight_p1_over_two():
+    parity_check_matrix = [
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+    ]
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3, 4, 5],
+        p1=4,
+        merge_rows=[0],
+    )
+
+    for bjmm_list in [l1, l2, l3, l4]:
+        for _, vector in bjmm_list:
+            assert hamming_weight(vector) == 2
+
+
 def test_build_bjmm_base_lists_use_full_information_vector_length():
     parity_check_matrix = [
         [1, 0, 0, 0, 0, 0],
@@ -1398,31 +1417,13 @@ def test_build_bjmm_base_lists_use_full_information_vector_length():
     l1, l2, l3, l4 = build_bjmm_base_lists(
         parity_check_matrix=parity_check_matrix,
         information_positions=[0, 1, 2, 3, 4, 5],
-        component_weight=1,
+        p1=2,
         merge_rows=[0],
     )
 
     for bjmm_list in [l1, l2, l3, l4]:
         for _, vector in bjmm_list:
             assert len(vector) == 6
-
-
-def test_build_bjmm_base_lists_have_correct_component_weight():
-    parity_check_matrix = [
-        [1, 0, 1, 0, 1, 0],
-        [0, 1, 0, 1, 0, 1],
-    ]
-
-    l1, l2, l3, l4 = build_bjmm_base_lists(
-        parity_check_matrix=parity_check_matrix,
-        information_positions=[0, 1, 2, 3, 4, 5],
-        component_weight=2,
-        merge_rows=[0],
-    )
-
-    for bjmm_list in [l1, l2, l3, l4]:
-        for _, vector in bjmm_list:
-            assert hamming_weight(vector) == 2
 
 
 def test_build_bjmm_base_lists_use_correct_halves():
@@ -1434,7 +1435,7 @@ def test_build_bjmm_base_lists_use_correct_halves():
     l1, l2, l3, l4 = build_bjmm_base_lists(
         parity_check_matrix=parity_check_matrix,
         information_positions=[0, 1, 2, 3],
-        component_weight=1,
+        p1=2,
         merge_rows=[0],
     )
 
@@ -1445,10 +1446,10 @@ def test_build_bjmm_base_lists_use_correct_halves():
         assert vector[:2] == [0, 0]
 
 
-def test_build_bjmm_base_lists_rejects_negative_component_weight():
+def test_build_bjmm_base_lists_rejects_negative_p1():
     with pytest.raises(
         ValueError,
-        match="Component weight must not be negative.",
+        match="p1 must not be negative.",
     ):
         build_bjmm_base_lists(
             parity_check_matrix=[
@@ -1456,15 +1457,15 @@ def test_build_bjmm_base_lists_rejects_negative_component_weight():
                 [0, 1, 0, 1],
             ],
             information_positions=[0, 1, 2, 3],
-            component_weight=-1,
+            p1=-2,
             merge_rows=[0],
         )
 
 
-def test_build_bjmm_base_lists_rejects_excessive_component_weight():
+def test_build_bjmm_base_lists_rejects_odd_p1():
     with pytest.raises(
         ValueError,
-        match="Component weight must not exceed half of the information positions.",
+        match="p1 must be even.",
     ):
         build_bjmm_base_lists(
             parity_check_matrix=[
@@ -1472,6 +1473,178 @@ def test_build_bjmm_base_lists_rejects_excessive_component_weight():
                 [0, 1, 0, 1],
             ],
             information_positions=[0, 1, 2, 3],
-            component_weight=3,
+            p1=3,
             merge_rows=[0],
+        )
+
+
+def test_build_bjmm_base_lists_rejects_excessive_p1():
+    with pytest.raises(
+        ValueError,
+        match="p1 / 2 must not exceed half of the information positions.",
+    ):
+        build_bjmm_base_lists(
+            parity_check_matrix=[
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+            ],
+            information_positions=[0, 1, 2, 3],
+            p1=6,
+            merge_rows=[0],
+        )
+
+
+
+
+
+
+
+
+def test_validate_bjmm_parameters_accepts_valid_parameters():
+    validate_bjmm_parameters(
+        information_length=8,
+        p=4,
+        p1=4,
+        ell1=2,
+        ell2=2,
+    )
+
+
+def test_validate_bjmm_parameters_rejects_non_positive_information_length():
+    with pytest.raises(
+        ValueError,
+        match="Information length must be positive.",
+    ):
+        validate_bjmm_parameters(
+            information_length=0,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_odd_information_length():
+    with pytest.raises(
+        ValueError,
+        match="Information length must be even.",
+    ):
+        validate_bjmm_parameters(
+            information_length=7,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_negative_p():
+    with pytest.raises(
+        ValueError,
+        match="p must not be negative.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=-2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_negative_p1():
+    with pytest.raises(
+        ValueError,
+        match="p1 must not be negative.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=2,
+            p1=-2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_odd_p():
+    with pytest.raises(
+        ValueError,
+        match="p must be even.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=3,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_odd_p1():
+    with pytest.raises(
+        ValueError,
+        match="p1 must be even.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=2,
+            p1=3,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_excessive_p():
+    with pytest.raises(
+        ValueError,
+        match="p must not exceed the information length.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=10,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_excessive_p1():
+    with pytest.raises(
+        ValueError,
+        match="p1 / 2 must not exceed half of the information length.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=2,
+            p1=10,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_negative_ell1():
+    with pytest.raises(
+        ValueError,
+        match="ell1 must not be negative.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=2,
+            p1=2,
+            ell1=-1,
+            ell2=1,
+        )
+
+
+def test_validate_bjmm_parameters_rejects_negative_ell2():
+    with pytest.raises(
+        ValueError,
+        match="ell2 must not be negative.",
+    ):
+        validate_bjmm_parameters(
+            information_length=8,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=-1,
         )

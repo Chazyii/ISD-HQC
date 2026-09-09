@@ -233,11 +233,10 @@ def build_bjmm_base_list(
 
 
 
-
 def build_bjmm_base_lists(
     parity_check_matrix: list[list[int]],
     information_positions: list[int],
-    component_weight: int,
+    p1: int,
     merge_rows: list[int],
 ) -> tuple[
     list[tuple[list[int], list[int]]],
@@ -248,23 +247,27 @@ def build_bjmm_base_lists(
     """
     Build the four base lists used by the educational depth-2 BJMM merge tree.
 
-    L1 and L3 are supported on the first half of the information positions.
-    L2 and L4 are supported on the second half.
-
     """
 
     first_half, second_half = split_bjmm_information_positions(
         information_positions=information_positions,
     )
 
-    if component_weight < 0:
+    if p1 < 0:
         raise ValueError(
-            "Component weight must not be negative."
+            "p1 must not be negative."
         )
+
+    if p1 % 2 != 0:
+        raise ValueError(
+            "p1 must be even."
+        )
+
+    component_weight = p1 // 2
 
     if component_weight > len(first_half):
         raise ValueError(
-            "Component weight must not exceed half of the information positions."
+            "p1 / 2 must not exceed half of the information positions."
         )
 
     half_length = len(first_half)
@@ -663,3 +666,71 @@ def find_valid_bjmm_candidate(
             return candidate_error
 
     return None
+
+
+
+
+
+def validate_bjmm_parameters(
+    information_length: int,
+    p: int,
+    p1: int,
+    ell1: int,
+    ell2: int,
+) -> None:
+    """
+    Validate parameters used by the educational depth-2 BJMM implementation.
+
+    """
+
+    if information_length <= 0:
+        raise ValueError(
+            "Information length must be positive."
+        )
+
+    if information_length % 2 != 0:
+        raise ValueError(
+            "Information length must be even."
+        )
+
+    if p < 0:
+        raise ValueError(
+            "p must not be negative."
+        )
+
+    if p1 < 0:
+        raise ValueError(
+            "p1 must not be negative."
+        )
+
+    if p % 2 != 0:
+        raise ValueError(
+            "p must be even."
+        )
+
+    if p1 % 2 != 0:
+        raise ValueError(
+            "p1 must be even."
+        )
+
+    if p > information_length:
+        raise ValueError(
+            "p must not exceed the information length."
+        )
+
+    half_length = information_length // 2
+
+    if p1 // 2 > half_length:
+        raise ValueError(
+            "p1 / 2 must not exceed half of the information length."
+        )
+
+    if ell1 < 0:
+        raise ValueError(
+            "ell1 must not be negative."
+        )
+
+    if ell2 < 0:
+        raise ValueError(
+            "ell2 must not be negative."
+        )
