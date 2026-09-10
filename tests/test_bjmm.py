@@ -12,6 +12,7 @@ from isd_hqc.algorithms.bjmm import (
     merge_bjmm_tree,
     reconstruct_bjmm_candidate,
     split_bjmm_information_positions,
+    split_bjmm_merge_rows,
     validate_bjmm_parameters,
 )
 
@@ -1647,4 +1648,88 @@ def test_validate_bjmm_parameters_rejects_negative_ell2():
             p1=2,
             ell1=1,
             ell2=-1,
+        )
+
+
+
+
+
+def test_split_bjmm_merge_rows():
+    first_level_rows, final_level_rows = split_bjmm_merge_rows(
+        merge_rows=[0, 2, 4, 5],
+        ell1=2,
+        ell2=2,
+    )
+
+    assert first_level_rows == [0, 2]
+    assert final_level_rows == [4, 5]
+
+
+def test_split_bjmm_merge_rows_with_zero_ell1():
+    first_level_rows, final_level_rows = split_bjmm_merge_rows(
+        merge_rows=[1, 3],
+        ell1=0,
+        ell2=2,
+    )
+
+    assert first_level_rows == []
+    assert final_level_rows == [1, 3]
+
+
+def test_split_bjmm_merge_rows_with_zero_ell2():
+    first_level_rows, final_level_rows = split_bjmm_merge_rows(
+        merge_rows=[1, 3],
+        ell1=2,
+        ell2=0,
+    )
+
+    assert first_level_rows == [1, 3]
+    assert final_level_rows == []
+
+
+def test_split_bjmm_merge_rows_rejects_negative_ell1():
+    with pytest.raises(
+        ValueError,
+        match="ell1 must not be negative.",
+    ):
+        split_bjmm_merge_rows(
+            merge_rows=[0, 1],
+            ell1=-1,
+            ell2=2,
+        )
+
+
+def test_split_bjmm_merge_rows_rejects_negative_ell2():
+    with pytest.raises(
+        ValueError,
+        match="ell2 must not be negative.",
+    ):
+        split_bjmm_merge_rows(
+            merge_rows=[0, 1],
+            ell1=2,
+            ell2=-1,
+        )
+
+
+def test_split_bjmm_merge_rows_rejects_duplicates():
+    with pytest.raises(
+        ValueError,
+        match="Merge rows must not contain duplicates.",
+    ):
+        split_bjmm_merge_rows(
+            merge_rows=[0, 0, 1, 2],
+            ell1=2,
+            ell2=2,
+        )
+
+
+def test_split_bjmm_merge_rows_rejects_wrong_number_of_rows():
+    with pytest.raises(
+        ValueError,
+        match="Number of merge rows must equal ell1 \\+ ell2.",
+    ):
+        split_bjmm_merge_rows(
+            merge_rows=[0, 1, 2],
+            ell1=2,
+            ell2=2,
         )

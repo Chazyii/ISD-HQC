@@ -734,3 +734,47 @@ def validate_bjmm_parameters(
         raise ValueError(
             "ell2 must not be negative."
         )
+
+
+
+
+
+
+def split_bjmm_merge_rows(
+    merge_rows: list[int],
+    ell1: int,
+    ell2: int,
+) -> tuple[list[int], list[int]]:
+    """
+    Split BJMM merge rows between the two levels
+    of the educational depth-2 merge tree.
+
+    """
+
+    if ell1 < 0:
+        raise ValueError(
+            "ell1 must not be negative."
+        )
+
+    if ell2 < 0:
+        raise ValueError(
+            "ell2 must not be negative."
+        )
+
+    if len(set(merge_rows)) != len(merge_rows):
+        raise ValueError(
+            "Merge rows must not contain duplicates."
+        )
+
+    if len(merge_rows) != ell1 + ell2:
+        raise ValueError(
+            "Number of merge rows must equal ell1 + ell2."
+        )
+
+    first_level_rows = merge_rows[:ell1]
+
+    final_level_rows = merge_rows[
+        ell1:ell1 + ell2
+    ]
+
+    return first_level_rows, final_level_rows
