@@ -1,8 +1,9 @@
 import pytest
-
+import random
 from isd_hqc.algorithms.bjmm import (
     build_bjmm_base_list,
     build_bjmm_base_lists,
+    build_bjmm_merge_targets,
     build_bjmm_syndrome_list,
     find_valid_bjmm_candidate,
     generate_representations,
@@ -21,7 +22,10 @@ from isd_hqc.syndrome import (
     verify_solution,
 )
 
-from isd_hqc.linear_algebra import hamming_weight
+from isd_hqc.linear_algebra import (
+    gf2_add_vectors,
+    hamming_weight,
+)
 
 def test_is_valid_representation():
     target_vector = [
@@ -1733,3 +1737,118 @@ def test_split_bjmm_merge_rows_rejects_wrong_number_of_rows():
             ell1=2,
             ell2=2,
         )
+
+
+
+
+
+
+
+
+
+
+def test_build_bjmm_merge_targets():
+    syndrome = [1, 0, 1, 1]
+
+    rng = random.Random(42)
+
+    left_target, right_target, final_target = (
+        build_bjmm_merge_targets(
+            syndrome=syndrome,
+            first_level_rows=[0, 2],
+            final_level_rows=[1, 3],
+            rng=rng,
+        )
+    )
+
+    first_syndrome_target = [
+        syndrome[0],
+        syndrome[2],
+    ]
+
+    assert gf2_add_vectors(
+        left_target,
+        right_target,
+    ) == first_syndrome_target
+
+    assert final_target == [
+        syndrome[1],
+        syndrome[3],
+    ]
+
+
+def test_build_bjmm_merge_targets_is_reproducible():
+    syndrome = [1, 0, 1, 1]
+
+    rng1 = random.Random(123)
+    rng2 = random.Random(123)
+
+    result1 = build_bjmm_merge_targets(
+        syndrome=syndrome,
+        first_level_rows=[0, 1],
+        final_level_rows=[2, 3],
+        rng=rng1,
+    )
+
+    result2 = build_bjmm_merge_targets(
+        syndrome=syndrome,
+        first_level_rows=[0, 1],
+        final_level_rows=[2, 3],
+        rng=rng2,
+    )
+
+    assert result1 == result2
+
+
+def test_build_bjmm_merge_targets_have_correct_lengths():
+    syndrome = [1, 0, 1, 1, 0]
+
+    left_target, right_target, final_target = (
+        build_bjmm_merge_targets(
+            syndrome=syndrome,
+            first_level_rows=[0, 2, 4],
+            final_level_rows=[1, 3],
+            rng=random.Random(42),
+        )
+    )
+
+    assert len(left_target) == 3
+    assert len(right_target) == 3
+    assert len(final_target) == 2
+
+
+def test_build_bjmm_merge_targets_with_empty_first_level_rows():
+    syndrome = [1, 0]
+
+    left_target, right_target, final_target = (
+        build_bjmm_merge_targets(
+            syndrome=syndrome,
+            first_level_rows=[],
+            final_level_rows=[0, 1],
+            rng=random.Random(42),
+        )
+    )
+
+    assert left_target == []
+    assert right_target == []
+    assert final_target == [1, 0]
+
+
+def test_build_bjmm_merge_targets_with_empty_final_level_rows():
+    syndrome = [1, 0]
+
+    left_target, right_target, final_target = (
+        build_bjmm_merge_targets(
+            syndrome=syndrome,
+            first_level_rows=[0, 1],
+            final_level_rows=[],
+            rng=random.Random(42),
+        )
+    )
+
+    assert gf2_add_vectors(
+        left_target,
+        right_target,
+    ) == [1, 0]
+
+    assert final_target == []

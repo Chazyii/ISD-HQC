@@ -8,7 +8,7 @@ from isd_hqc.linear_algebra import (
     gf2_matrix_vector_mul,
 )
 
-
+import random 
 
 from isd_hqc.algorithms.stern import (
     generate_weight_vectors,
@@ -778,3 +778,49 @@ def split_bjmm_merge_rows(
     ]
 
     return first_level_rows, final_level_rows
+
+
+
+
+
+
+def build_bjmm_merge_targets(
+    syndrome: list[int],
+    first_level_rows: list[int],
+    final_level_rows: list[int],
+    rng=None,
+) -> tuple[list[int], list[int], list[int]]:
+    """
+    Build syndrome targets for the two levels of the
+    educational depth-2 BJMM merge tree.
+
+    """
+
+    if rng is None:
+        rng = random
+
+    first_syndrome_target = project_syndrome(
+        syndrome=syndrome,
+        collision_rows=first_level_rows,
+    )
+
+    final_target = project_syndrome(
+        syndrome=syndrome,
+        collision_rows=final_level_rows,
+    )
+
+    left_target = [
+        rng.randint(0, 1)
+        for _ in first_level_rows
+    ]
+
+    right_target = gf2_add_vectors(
+        first_syndrome_target,
+        left_target,
+    )
+
+    return (
+        left_target,
+        right_target,
+        final_target,
+    )
