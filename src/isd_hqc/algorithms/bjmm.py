@@ -302,8 +302,8 @@ def build_bjmm_base_lists(
     )
 
     l1 = first_half_list.copy()
-    l2 = second_half_list.copy()
-    l3 = first_half_list.copy()
+    l2 = first_half_list.copy()
+    l3 = second_half_list.copy()
     l4 = second_half_list.copy()
 
     return l1, l2, l3, l4
@@ -450,49 +450,90 @@ def merge_bjmm_level(
 
 def merge_bjmm_tree(
     parity_check_matrix: list[list[int]],
-    positions: list[int],
-    first_left_list: list[tuple[list[int], list[int]]],
-    first_right_list: list[tuple[list[int], list[int]]],
-    second_left_list: list[tuple[list[int], list[int]]],
-    second_right_list: list[tuple[list[int], list[int]]],
-    first_merge_target: list[int],
-    second_merge_target: list[int],
-    next_merge_rows: list[int],
-    final_merge_target: list[int],
+    information_positions: list[int],
+    syndrome: list[int],
+    p: int,
+    p1: int,
+    ell1: int,
+    ell2: int,
+    merge_rows: list[int],
 ) -> list[list[int]]:
     """
-    Perform a two-level BJMM merge tree.
+    Perform the complete educational depth-2 BJMM merge tree.
 
+    Base vectors have weight p1 / 2.
+
+    The first merge level constructs L12 and L34.
+    Intermediate vectors must have weight p / 2.
+
+    The final merge combines L12 and L34 into information-part
+    candidates of weight p.
     """
 
-    first_intermediate = merge_bjmm_level(
-        parity_check_matrix=parity_check_matrix,
-        positions=positions,
-        left_list=first_left_list,
-        right_list=first_right_list,
-        merge_target=first_merge_target,
-        next_merge_rows=next_merge_rows,
+    validate_bjmm_parameters(
+        information_length=len(information_positions),
+        p=p,
+        p1=p1,
+        ell1=ell1,
+        ell2=ell2,
     )
 
-    if not first_intermediate:
+    first_level_rows, final_level_rows = (
+        split_bjmm_merge_rows(
+            merge_rows=merge_rows,
+            ell1=ell1,
+            ell2=ell2,
+        )
+    )
+
+    left_target, right_target, final_target = (
+        build_bjmm_merge_targets(
+            syndrome=syndrome,
+            first_level_rows=first_level_rows,
+            final_level_rows=final_level_rows,
+        )
+    )
+
+    l1, l2, l3, l4 = build_bjmm_base_lists(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=information_positions,
+        p1=p1,
+        merge_rows=first_level_rows,
+    )
+
+    intermediate_weight = p // 2
+
+    l12 = merge_bjmm_level(
+        parity_check_matrix=parity_check_matrix,
+        positions=information_positions,
+        left_list=l1,
+        right_list=l2,
+        merge_target=left_target,
+        next_merge_rows=final_level_rows,
+        merged_weight=intermediate_weight,
+    )
+
+    if not l12:
         return []
 
-    second_intermediate = merge_bjmm_level(
+    l34 = merge_bjmm_level(
         parity_check_matrix=parity_check_matrix,
-        positions=positions,
-        left_list=second_left_list,
-        right_list=second_right_list,
-        merge_target=second_merge_target,
-        next_merge_rows=next_merge_rows,
+        positions=information_positions,
+        left_list=l3,
+        right_list=l4,
+        merge_target=right_target,
+        next_merge_rows=final_level_rows,
+        merged_weight=intermediate_weight,
     )
 
-    if not second_intermediate:
+    if not l34:
         return []
 
     return merge_bjmm_lists(
-        left_list=first_intermediate,
-        right_list=second_intermediate,
-        target_syndrome=final_merge_target,
+        left_list=l12,
+        right_list=l34,
+        target_syndrome=final_target,
+        target_weight=p,
     )
 
 
@@ -788,16 +829,12 @@ def build_bjmm_merge_targets(
     syndrome: list[int],
     first_level_rows: list[int],
     final_level_rows: list[int],
-    rng=None,
 ) -> tuple[list[int], list[int], list[int]]:
     """
     Build syndrome targets for the two levels of the
     educational depth-2 BJMM merge tree.
 
     """
-
-    if rng is None:
-        rng = random
 
     first_syndrome_target = project_syndrome(
         syndrome=syndrome,
@@ -810,14 +847,10 @@ def build_bjmm_merge_targets(
     )
 
     left_target = [
-        rng.randint(0, 1)
-        for _ in first_level_rows
+        0 for _ in first_level_rows
     ]
 
-    right_target = gf2_add_vectors(
-        first_syndrome_target,
-        left_target,
-    )
+    right_target = first_syndrome_target
 
     return (
         left_target,
