@@ -613,178 +613,71 @@ def test_merge_bjmm_level_preserves_merged_vector():
 
 
 
-def test_merge_bjmm_tree():
+def test_merge_bjmm_tree_finds_candidate():
     parity_check_matrix = [
+        [0, 0, 0, 0],
         [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
     ]
 
     result = merge_bjmm_tree(
         parity_check_matrix=parity_check_matrix,
-        positions=[0, 1, 2, 3],
-        first_left_list=[
-            (
-                [1],
-                [1, 0, 0, 0],
-            ),
-        ],
-        first_right_list=[
-            (
-                [0],
-                [0, 1, 0, 0],
-            ),
-        ],
-        second_left_list=[
-            (
-                [0],
-                [0, 0, 1, 0],
-            ),
-        ],
-        second_right_list=[
-            (
-                [1],
-                [0, 0, 0, 1],
-            ),
-        ],
-        first_merge_target=[1],
-        second_merge_target=[1],
-        next_merge_rows=[0, 1],
-        final_merge_target=[1, 1],
+        information_positions=[0, 1, 2, 3],
+        syndrome=[0, 1],
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        merge_rows=[0, 1],
     )
 
-    assert result == [
-        [1, 1, 1, 1],
-    ]
+    assert result
+
+    for candidate in result:
+        assert candidate == [1, 1, 1, 1]
+        assert hamming_weight(candidate) == 4
 
 
-def test_merge_bjmm_tree_returns_empty_when_first_merge_fails():
+def test_merge_bjmm_tree_returns_empty_when_final_target_does_not_match():
     parity_check_matrix = [
-        [1, 0],
-        [0, 1],
-    ]
-
-    result = merge_bjmm_tree(
-        parity_check_matrix=parity_check_matrix,
-        positions=[0, 1],
-        first_left_list=[
-            (
-                [0],
-                [1, 0],
-            ),
-        ],
-        first_right_list=[
-            (
-                [0],
-                [0, 1],
-            ),
-        ],
-        second_left_list=[
-            (
-                [1],
-                [1, 0],
-            ),
-        ],
-        second_right_list=[
-            (
-                [0],
-                [0, 1],
-            ),
-        ],
-        first_merge_target=[1],
-        second_merge_target=[1],
-        next_merge_rows=[0],
-        final_merge_target=[0],
-    )
-
-    assert result == []
-
-
-def test_merge_bjmm_tree_returns_empty_when_second_merge_fails():
-    parity_check_matrix = [
-        [1, 0],
-        [0, 1],
-    ]
-
-    result = merge_bjmm_tree(
-        parity_check_matrix=parity_check_matrix,
-        positions=[0, 1],
-        first_left_list=[
-            (
-                [1],
-                [1, 0],
-            ),
-        ],
-        first_right_list=[
-            (
-                [0],
-                [0, 1],
-            ),
-        ],
-        second_left_list=[
-            (
-                [0],
-                [1, 0],
-            ),
-        ],
-        second_right_list=[
-            (
-                [0],
-                [0, 1],
-            ),
-        ],
-        first_merge_target=[1],
-        second_merge_target=[1],
-        next_merge_rows=[0],
-        final_merge_target=[0],
-    )
-
-    assert result == []
-
-
-def test_merge_bjmm_tree_returns_empty_when_final_merge_fails():
-    parity_check_matrix = [
+        [0, 0, 0, 0],
         [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
     ]
 
     result = merge_bjmm_tree(
         parity_check_matrix=parity_check_matrix,
-        positions=[0, 1, 2, 3],
-        first_left_list=[
-            (
-                [1],
-                [1, 0, 0, 0],
-            ),
-        ],
-        first_right_list=[
-            (
-                [0],
-                [0, 1, 0, 0],
-            ),
-        ],
-        second_left_list=[
-            (
-                [0],
-                [0, 0, 1, 0],
-            ),
-        ],
-        second_right_list=[
-            (
-                [1],
-                [0, 0, 0, 1],
-            ),
-        ],
-        first_merge_target=[1],
-        second_merge_target=[1],
-        next_merge_rows=[0, 1],
-        final_merge_target=[0, 0],
+        information_positions=[0, 1, 2, 3],
+        syndrome=[0, 0],
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        merge_rows=[0, 1],
     )
 
     assert result == []
+
+
+def test_merge_bjmm_tree_candidates_have_target_weight():
+    parity_check_matrix = [
+        [0, 0, 0, 0],
+        [1, 0, 0, 0],
+    ]
+
+    result = merge_bjmm_tree(
+        parity_check_matrix=parity_check_matrix,
+        information_positions=[0, 1, 2, 3],
+        syndrome=[0, 1],
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        merge_rows=[0, 1],
+    )
+
+    assert result
+
+    for candidate in result:
+        assert hamming_weight(candidate) == 4
 
 
 
@@ -1390,8 +1283,8 @@ def test_build_bjmm_base_lists():
     ]
 
     assert l1 == expected_first_half_list
-    assert l2 == expected_second_half_list
-    assert l3 == expected_first_half_list
+    assert l2 == expected_first_half_list
+    assert l3 == expected_second_half_list
     assert l4 == expected_second_half_list
 
 
@@ -1750,82 +1643,25 @@ def test_split_bjmm_merge_rows_rejects_wrong_number_of_rows():
 def test_build_bjmm_merge_targets():
     syndrome = [1, 0, 1, 1]
 
-    rng = random.Random(42)
-
     left_target, right_target, final_target = (
         build_bjmm_merge_targets(
             syndrome=syndrome,
             first_level_rows=[0, 2],
             final_level_rows=[1, 3],
-            rng=rng,
         )
     )
 
-    first_syndrome_target = [
-        syndrome[0],
-        syndrome[2],
-    ]
-
-    assert gf2_add_vectors(
-        left_target,
-        right_target,
-    ) == first_syndrome_target
-
-    assert final_target == [
-        syndrome[1],
-        syndrome[3],
-    ]
-
-
-def test_build_bjmm_merge_targets_is_reproducible():
-    syndrome = [1, 0, 1, 1]
-
-    rng1 = random.Random(123)
-    rng2 = random.Random(123)
-
-    result1 = build_bjmm_merge_targets(
-        syndrome=syndrome,
-        first_level_rows=[0, 1],
-        final_level_rows=[2, 3],
-        rng=rng1,
-    )
-
-    result2 = build_bjmm_merge_targets(
-        syndrome=syndrome,
-        first_level_rows=[0, 1],
-        final_level_rows=[2, 3],
-        rng=rng2,
-    )
-
-    assert result1 == result2
-
-
-def test_build_bjmm_merge_targets_have_correct_lengths():
-    syndrome = [1, 0, 1, 1, 0]
-
-    left_target, right_target, final_target = (
-        build_bjmm_merge_targets(
-            syndrome=syndrome,
-            first_level_rows=[0, 2, 4],
-            final_level_rows=[1, 3],
-            rng=random.Random(42),
-        )
-    )
-
-    assert len(left_target) == 3
-    assert len(right_target) == 3
-    assert len(final_target) == 2
+    assert left_target == [0, 0]
+    assert right_target == [1, 1]
+    assert final_target == [0, 1]
 
 
 def test_build_bjmm_merge_targets_with_empty_first_level_rows():
-    syndrome = [1, 0]
-
     left_target, right_target, final_target = (
         build_bjmm_merge_targets(
-            syndrome=syndrome,
+            syndrome=[1, 0],
             first_level_rows=[],
             final_level_rows=[0, 1],
-            rng=random.Random(42),
         )
     )
 
@@ -1835,20 +1671,14 @@ def test_build_bjmm_merge_targets_with_empty_first_level_rows():
 
 
 def test_build_bjmm_merge_targets_with_empty_final_level_rows():
-    syndrome = [1, 0]
-
     left_target, right_target, final_target = (
         build_bjmm_merge_targets(
-            syndrome=syndrome,
+            syndrome=[1, 0],
             first_level_rows=[0, 1],
             final_level_rows=[],
-            rng=random.Random(42),
         )
     )
 
-    assert gf2_add_vectors(
-        left_target,
-        right_target,
-    ) == [1, 0]
-
+    assert left_target == [0, 0]
+    assert right_target == [1, 0]
     assert final_target == []
