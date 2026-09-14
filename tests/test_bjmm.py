@@ -15,6 +15,7 @@ from isd_hqc.algorithms.bjmm import (
     split_bjmm_information_positions,
     split_bjmm_merge_rows,
     validate_bjmm_parameters,
+    bjmm_iteration,
 )
 
 from isd_hqc.syndrome import (
@@ -1682,3 +1683,175 @@ def test_build_bjmm_merge_targets_with_empty_final_level_rows():
     assert left_target == [0, 0]
     assert right_target == [1, 0]
     assert final_target == []
+
+
+
+
+
+
+
+def test_bjmm_iteration_finds_valid_error():
+    systematic_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    transformed_syndrome = [1, 1]
+
+    result = bjmm_iteration(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=[0, 1],
+        target_weight=6,
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        rng=random.Random(42),
+    )
+
+    assert result is not None
+    assert hamming_weight(result) == 6
+    assert verify_solution(
+        systematic_matrix,
+        transformed_syndrome,
+        result,
+    )
+
+
+def test_bjmm_iteration_returns_none_when_no_candidate_exists():
+    systematic_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    result = bjmm_iteration(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=[1, 1],
+        pivot_positions=[0, 1],
+        target_weight=1,
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        rng=random.Random(42),
+    )
+
+    assert result is None
+
+
+def test_bjmm_iteration_rejects_empty_matrix():
+    with pytest.raises(
+        ValueError,
+        match="Systematic matrix must not be empty.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[],
+            transformed_syndrome=[],
+            pivot_positions=[],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=0,
+            ell2=0,
+        )
+
+
+def test_bjmm_iteration_rejects_wrong_syndrome_length():
+    with pytest.raises(
+        ValueError,
+        match="Syndrome length must match the number of matrix rows.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            transformed_syndrome=[1],
+            pivot_positions=[0, 1],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_bjmm_iteration_rejects_negative_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0, 1],
+            target_weight=-1,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_bjmm_iteration_rejects_duplicate_pivot_positions():
+    with pytest.raises(
+        ValueError,
+        match="Pivot positions must not contain duplicates.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0, 0],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_bjmm_iteration_rejects_wrong_number_of_pivots():
+    with pytest.raises(
+        ValueError,
+        match="Number of pivot positions must match the number of matrix rows.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+        )
+
+
+def test_bjmm_iteration_rejects_too_many_merge_rows():
+    with pytest.raises(
+        ValueError,
+        match=r"ell1 \+ ell2 must not exceed the number of matrix rows.",
+    ):
+        bjmm_iteration(
+            systematic_matrix=[
+                [1, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0],
+            ],
+            transformed_syndrome=[0, 0],
+            pivot_positions=[0, 1],
+            target_weight=4,
+            p=4,
+            p1=2,
+            ell1=2,
+            ell2=1,
+        )

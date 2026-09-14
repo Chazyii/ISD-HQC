@@ -857,3 +857,120 @@ def build_bjmm_merge_targets(
         right_target,
         final_target,
     )
+
+
+
+
+
+
+
+def bjmm_iteration(
+    systematic_matrix: list[list[int]],
+    transformed_syndrome: list[int],
+    pivot_positions: list[int],
+    target_weight: int,
+    p: int,
+    p1: int,
+    ell1: int,
+    ell2: int,
+    rng=None,
+) -> list[int] | None:
+    """
+    Perform one educational depth-2 BJMM decoding iteration
+    on a matrix already transformed to systematic form.
+
+    """
+
+    if not systematic_matrix:
+        raise ValueError(
+            "Systematic matrix must not be empty."
+        )
+
+    number_of_rows = len(systematic_matrix)
+    number_of_columns = len(systematic_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in systematic_matrix
+    ):
+        raise ValueError(
+            "Systematic matrix rows must have equal length."
+        )
+
+    if len(transformed_syndrome) != number_of_rows:
+        raise ValueError(
+            "Syndrome length must match the number of matrix rows."
+        )
+
+    if target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
+
+    if len(set(pivot_positions)) != len(pivot_positions):
+        raise ValueError(
+            "Pivot positions must not contain duplicates."
+        )
+
+    if any(
+        position < 0 or position >= number_of_columns
+        for position in pivot_positions
+    ):
+        raise ValueError(
+            "Pivot position is outside the matrix."
+        )
+
+    if len(pivot_positions) != number_of_rows:
+        raise ValueError(
+            "Number of pivot positions must match the number of matrix rows."
+        )
+
+    information_positions = [
+        position
+        for position in range(number_of_columns)
+        if position not in pivot_positions
+    ]
+
+    validate_bjmm_parameters(
+        information_length=len(information_positions),
+        p=p,
+        p1=p1,
+        ell1=ell1,
+        ell2=ell2,
+    )
+
+    total_merge_rows = ell1 + ell2
+
+    if total_merge_rows > number_of_rows:
+        raise ValueError(
+            "ell1 + ell2 must not exceed the number of matrix rows."
+        )
+
+    merge_rows = select_collision_rows(
+        number_of_rows=number_of_rows,
+        ell=total_merge_rows,
+        rng=rng,
+    )
+
+    information_candidates = merge_bjmm_tree(
+        parity_check_matrix=systematic_matrix,
+        information_positions=information_positions,
+        syndrome=transformed_syndrome,
+        p=p,
+        p1=p1,
+        ell1=ell1,
+        ell2=ell2,
+        merge_rows=merge_rows,
+    )
+
+    if not information_candidates:
+        return None
+
+    return find_valid_bjmm_candidate(
+        systematic_matrix=systematic_matrix,
+        transformed_syndrome=transformed_syndrome,
+        pivot_positions=pivot_positions,
+        information_positions=information_positions,
+        information_candidates=information_candidates,
+        target_weight=target_weight,
+    )
