@@ -16,6 +16,7 @@ from isd_hqc.algorithms.bjmm import (
     split_bjmm_merge_rows,
     validate_bjmm_parameters,
     bjmm_iteration,
+    bjmm_decode,
 )
 
 from isd_hqc.syndrome import (
@@ -1854,4 +1855,189 @@ def test_bjmm_iteration_rejects_too_many_merge_rows():
             p1=2,
             ell1=2,
             ell2=1,
+        )
+
+
+
+
+
+
+
+
+
+def test_bjmm_decode_finds_valid_error():
+    parity_check_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    syndrome = [1, 1]
+
+    result = bjmm_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        target_weight=6,
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        max_iterations=20,
+        rng=random.Random(42),
+    )
+
+    assert result is not None
+    assert hamming_weight(result) == 6
+
+    assert verify_solution(
+        parity_check_matrix,
+        syndrome,
+        result,
+    )
+
+
+def test_bjmm_decode_returns_none_when_solution_not_found():
+    parity_check_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    result = bjmm_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=[1, 1],
+        target_weight=1,
+        p=4,
+        p1=2,
+        ell1=1,
+        ell2=1,
+        max_iterations=5,
+        rng=random.Random(42),
+    )
+
+    assert result is None
+
+
+def test_bjmm_decode_is_reproducible():
+    parity_check_matrix = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+    ]
+
+    kwargs = {
+        "parity_check_matrix": parity_check_matrix,
+        "syndrome": [1, 1],
+        "target_weight": 6,
+        "p": 4,
+        "p1": 2,
+        "ell1": 1,
+        "ell2": 1,
+        "max_iterations": 20,
+    }
+
+    result1 = bjmm_decode(
+        **kwargs,
+        rng=random.Random(42),
+    )
+
+    result2 = bjmm_decode(
+        **kwargs,
+        rng=random.Random(42),
+    )
+
+    assert result1 == result2
+
+
+def test_bjmm_decode_rejects_empty_matrix():
+    with pytest.raises(
+        ValueError,
+        match="Parity-check matrix must not be empty.",
+    ):
+        bjmm_decode(
+            parity_check_matrix=[],
+            syndrome=[],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=0,
+            ell2=0,
+            max_iterations=10,
+        )
+
+
+def test_bjmm_decode_rejects_wrong_syndrome_length():
+    with pytest.raises(
+        ValueError,
+        match="Syndrome length must match the number of matrix rows.",
+    ):
+        bjmm_decode(
+            parity_check_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            syndrome=[1],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+            max_iterations=10,
+        )
+
+
+def test_bjmm_decode_rejects_negative_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not be negative.",
+    ):
+        bjmm_decode(
+            parity_check_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            syndrome=[0, 0],
+            target_weight=-1,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+            max_iterations=10,
+        )
+
+
+def test_bjmm_decode_rejects_excessive_target_weight():
+    with pytest.raises(
+        ValueError,
+        match="Target weight must not exceed the code length.",
+    ):
+        bjmm_decode(
+            parity_check_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            syndrome=[0, 0],
+            target_weight=5,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+            max_iterations=10,
+        )
+
+
+def test_bjmm_decode_rejects_non_positive_max_iterations():
+    with pytest.raises(
+        ValueError,
+        match="Maximum number of iterations must be positive.",
+    ):
+        bjmm_decode(
+            parity_check_matrix=[
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ],
+            syndrome=[0, 0],
+            target_weight=2,
+            p=2,
+            p1=2,
+            ell1=1,
+            ell2=1,
+            max_iterations=0,
         )

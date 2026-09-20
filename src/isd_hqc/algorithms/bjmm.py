@@ -11,10 +11,12 @@ from isd_hqc.linear_algebra import (
 import random 
 
 from isd_hqc.algorithms.stern import (
+    construct_systematic_form,
     generate_weight_vectors,
     project_syndrome,
+    select_collision_rows,
+    select_pivot_positions,
 )
-
 from itertools import combinations
 from isd_hqc.syndrome import verify_solution
 
@@ -974,3 +976,123 @@ def bjmm_iteration(
         information_candidates=information_candidates,
         target_weight=target_weight,
     )
+
+
+
+
+
+
+
+def bjmm_decode(
+    parity_check_matrix: list[list[int]],
+    syndrome: list[int],
+    target_weight: int,
+    p: int,
+    p1: int,
+    ell1: int,
+    ell2: int,
+    max_iterations: int,
+    rng=None,
+) -> list[int] | None:
+    """
+    Decode a syndrome using the educational depth-2 BJMM algorithm.
+
+    """
+
+    if not parity_check_matrix:
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
+
+    number_of_rows = len(parity_check_matrix)
+    number_of_columns = len(parity_check_matrix[0])
+
+    if any(
+        len(row) != number_of_columns
+        for row in parity_check_matrix
+    ):
+        raise ValueError(
+            "Parity-check matrix rows must have equal length."
+        )
+
+    if number_of_columns <= number_of_rows:
+        raise ValueError(
+            "Number of columns must be greater than number of rows."
+        )
+
+    if len(syndrome) != number_of_rows:
+        raise ValueError(
+            "Syndrome length must match the number of matrix rows."
+        )
+
+    if target_weight < 0:
+        raise ValueError(
+            "Target weight must not be negative."
+        )
+
+    if target_weight > number_of_columns:
+        raise ValueError(
+            "Target weight must not exceed the code length."
+        )
+
+    if max_iterations <= 0:
+        raise ValueError(
+            "Maximum number of iterations must be positive."
+        )
+
+    information_length = number_of_columns - number_of_rows
+
+    validate_bjmm_parameters(
+        information_length=information_length,
+        p=p,
+        p1=p1,
+        ell1=ell1,
+        ell2=ell2,
+    )
+
+    if ell1 + ell2 > number_of_rows:
+        raise ValueError(
+            "ell1 + ell2 must not exceed the number of matrix rows."
+        )
+
+    for _ in range(max_iterations):
+        pivot_positions = select_pivot_positions(
+            rows=number_of_rows,
+            columns=number_of_columns,
+            rng=rng,
+        )
+
+        try:
+            systematic_matrix, transformed_syndrome = (
+                construct_systematic_form(
+                    parity_check_matrix=parity_check_matrix,
+                    syndrome=syndrome,
+                    pivot_positions=pivot_positions,
+                )
+            )
+        except ValueError:
+            continue
+
+        candidate = bjmm_iteration(
+            systematic_matrix=systematic_matrix,
+            transformed_syndrome=transformed_syndrome,
+            pivot_positions=pivot_positions,
+            target_weight=target_weight,
+            p=p,
+            p1=p1,
+            ell1=ell1,
+            ell2=ell2,
+            rng=rng,
+        )
+
+        if candidate is None:
+            continue
+
+        if verify_solution(
+            parity_check_matrix,
+            syndrome,
+            candidate,
+        ):
+            return candidate
+
+    return None
