@@ -11,7 +11,11 @@ from isd_hqc.linear_algebra import (
 from isd_hqc.syndrome import verify_solution
 
 
-def select_information_set(length: int, dimension: int) -> list[int]:
+def select_information_set(
+    length: int,
+    dimension: int,
+    rng=None,
+) -> list[int]:
 
     if length <= 0:
         raise ValueError("Length must be positive.")
@@ -22,7 +26,15 @@ def select_information_set(length: int, dimension: int) -> list[int]:
     if dimension > length:
         raise ValueError("Dimension cannot exceed code length.")
 
-    return sorted(random.sample(range(length), dimension))
+    if rng is None:
+        rng = random
+
+    return sorted(
+        rng.sample(
+            range(length),
+            dimension,
+        )
+    )
 
 
 
@@ -131,10 +143,41 @@ def prange_decode(
     syndrome: Vector,
     weight: int,
     max_iterations: int = 1000,
+    rng=None,
 ) -> Vector | None:
+    """
+    Decode a syndrome using the Prange ISD algorithm.
+
+    The algorithm repeatedly selects a random information set,
+    assumes that the error is zero on those positions, solves
+    the induced linear system on the complementary positions,
+    and verifies the resulting candidate error.
+
+    Args:
+        parity_check_matrix:
+            Binary parity-check matrix H.
+
+        syndrome:
+            Target syndrome s.
+
+        weight:
+            Required Hamming weight of the decoded error.
+
+        max_iterations:
+            Maximum number of information sets to try.
+
+        rng:
+            Optional random number generator used for reproducible
+            experiments.
+
+    Returns:
+        A valid error vector if decoding succeeds, otherwise None.
+    """
 
     if not parity_check_matrix:
-        raise ValueError("Parity-check matrix must not be empty.")
+        raise ValueError(
+            "Parity-check matrix must not be empty."
+        )
 
     number_of_rows = len(parity_check_matrix)
     number_of_columns = len(parity_check_matrix[0])
@@ -163,7 +206,9 @@ def prange_decode(
         )
 
     if max_iterations <= 0:
-        raise ValueError("Maximum number of iterations must be positive.")
+        raise ValueError(
+            "Maximum number of iterations must be positive."
+        )
 
     dimension = number_of_columns - number_of_rows
 
@@ -171,6 +216,7 @@ def prange_decode(
         information_set = select_information_set(
             length=number_of_columns,
             dimension=dimension,
+            rng=rng,
         )
 
         induced_matrix, induced_syndrome, complement = (

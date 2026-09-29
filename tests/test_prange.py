@@ -1,5 +1,5 @@
 import pytest
-
+import random
 from isd_hqc.algorithms.prange import (
     construct_induced_system,
     select_information_set,
@@ -287,7 +287,7 @@ def test_prange_decode_finds_error(monkeypatch):
     ]
     syndrome = [1, 1]
 
-    def fixed_information_set(length, dimension):
+    def fixed_information_set(length, dimension, rng=None):
         return [0, 1]
 
     monkeypatch.setattr(
@@ -317,7 +317,7 @@ def test_prange_decode_retries_after_invalid_candidate(monkeypatch):
         [0, 1],
     ]
 
-    def controlled_information_set(length, dimension):
+    def controlled_information_set(length, dimension, rng=None):
         return information_sets.pop(0)
 
     monkeypatch.setattr(
@@ -342,7 +342,7 @@ def test_prange_decode_returns_none_after_max_iterations(monkeypatch):
     ]
     syndrome = [1, 1]
 
-    def unsuccessful_information_set(length, dimension):
+    def unsuccessful_information_set(length, dimension, rng=None):
         return [2, 3]
 
     monkeypatch.setattr(
@@ -424,3 +424,53 @@ def test_prange_decode_invalid_max_iterations():
             weight=1,
             max_iterations=0,
         )
+
+
+
+
+
+
+def test_select_information_set_is_reproducible():
+    rng1 = random.Random(42)
+    rng2 = random.Random(42)
+
+    result1 = select_information_set(
+        length=10,
+        dimension=5,
+        rng=rng1,
+    )
+
+    result2 = select_information_set(
+        length=10,
+        dimension=5,
+        rng=rng2,
+    )
+
+    assert result1 == result2
+
+
+def test_prange_decode_is_reproducible():
+    parity_check_matrix = [
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ]
+
+    syndrome = [1, 1]
+
+    result1 = prange_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        weight=2,
+        max_iterations=100,
+        rng=random.Random(42),
+    )
+
+    result2 = prange_decode(
+        parity_check_matrix=parity_check_matrix,
+        syndrome=syndrome,
+        weight=2,
+        max_iterations=100,
+        rng=random.Random(42),
+    )
+
+    assert result1 == result2
